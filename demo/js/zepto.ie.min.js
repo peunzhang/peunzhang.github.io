@@ -1,0 +1,1 @@
+(function(){try{getComputedStyle(undefined)}catch(e){var nativeGetComputedStyle=getComputedStyle;window.getComputedStyle=function(element){try{return nativeGetComputedStyle(element)}catch(e){return null}}}})();

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width,initial-scale=1,maximum-scale=1.0,user-scalable=no" name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="black" name="apple-mobile-web-app-status-bar-style">
+<meta content="telephone=no" name="format-detection">
+<meta content="email=no" name="format-detection">
+<title>点5测试 - height</title>
+<style type="text/css">
+body{padding: 10px;-webkit-touch-callout:none;}
+h2{font-size: 14px;}
+div{margin-bottom: 20px;}
+#useragent,#try{color: red;font-size: 16px;}
+
+[class^="height"]{background-color: #000;font-size: 0;overflow: hidden;}
+.height_005{height: 0.5px;}
+.height_010{height: 1px;}
+.height_012{height: 1.2px;}
+.height_015{height: 1.5px;}
+.height_018{height: 1.8px;}
+.height_020{height: 2px;}
+
+#rangeAdd,#rangeMinus,.range_value_wrap{display: inline-block;padding: 15px 20px;line-height: 1;font-size: 20px;border: 1px solid #000;color: #000;text-decoration: none;}
+.range_value_wrap{padding: 5px 10px;border-color: transparent;color: red;margin-left: 50px;}
+</style>
+</script>
+</head>
+
+<body>
+<strong id="useragent"></strong>
+<h2>height:0.5px</h2>
+<div class="height_005"></div>
+<h2>height:1px</h2>
+<div class="height_010"></div>
+<h2>height:1.2px</h2>
+<div class="height_012"></div>
+<h2>height:1.5px</h2>
+<div class="height_015"></div>
+<h2>height:1.8px</h2>
+<div class="height_018"></div>
+<h2>height:2px</h2>
+<div class="height_020"></div>
+
+<h3 id="try">亲自测试（长按+-控制线条厚度）</h3>
+<div>
+	<span id="rangeAdd">+</span>
+	<span id="rangeMinus">-</span>
+	<span class="range_value_wrap"><span id="rangeValue">1</span>px</span>
+</div>
+<div id="rangeHeight" class="height_010"></div>
+
+
+<script type="text/javascript" src="../js/zepto.min.js"></script>
+<script type="text/javascript" src="../js/zepto.event.min.js"></script>
+<script type="text/javascript" src="../js/zepto.ie.min.js"></script>
+<script type="text/javascript" src="../js/zepto.detect.min.js"></script>
+<script type="text/javascript">
+$(function(){
+	if ($.os.phone || $.os.tablet) {
+		var usergent = "系统：" + ($.os.wp ? "wphone" : ($.os.ios ? "ios" : ($.os.android ? "android" : "other"))) + " " + $.os.version;
+		$("#useragent").text(usergent);
+	}
+	else{
+		$("#useragent").text("使用chrome控制台选择设备模拟器体验更佳");
+	}
+	
+	var rangeValue = $("#rangeValue"),
+		numB,
+		numL;
+	function ctrl(mode,n){
+		var rangeValueText = rangeValue.text();
+		numB = (mode == "add" ? (parseFloat(rangeValueText) + n) : (parseFloat(rangeValueText) - n)).toFixed(1);
+		numL = Math.max(0,numB);
+		rangeValue.text(numL);
+		$("#rangeHeight").css("height",numL + "px");
+	}
+
+	var timeOutEvent = 0;
+	$("#rangeAdd").on("touchstart",function(){
+		timeOutEvent = 0;
+		timeOutEvent = setInterval(function(){
+			ctrl("add",0.1);
+		},80);
+		return false;
+	})
+	$("#rangeAdd").on("touchend",function(){
+		clearTimeout(timeOutEvent);
+		timeOutEvent = 0;
+	    return false; 
+	})
+
+	$("#rangeMinus").on("touchstart",function(){
+		timeOutEvent = setInterval(function(){
+			ctrl("minus",0.1);
+		},80);
+		return false;
+	})
+	$("#rangeMinus").on("touchend",function(){
+		clearTimeout(timeOutEvent);
+		timeOutEvent = 0;
+	    return false; 
+	})
+})
+</script>
+</body>
+
+</html>

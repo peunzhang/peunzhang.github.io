@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="black" name="apple-mobile-web-app-status-bar-style">
+<meta content="telephone=no" name="format-detection">
+<meta content="email=no" name="format-detection">
+<title>demo</title>
+<style>
+*{padding: 0;margin: 0;}
+html,body{height: 100%;}
+h1{position: fixed;bottom: 0;left: 0;width: 100%;font-size: 16px;height: 30px;line-height: 30px;text-align: center;color: #FFFFFF;background-color:black;z-index: 2;}
+.page{width: 100%;height: 100%;position: relative;}
+[class^="page-"]{display: none;width: 100%;height: 100%;position: absolute;font-size: 30px;text-align: center;line-height: 200px;color: white;}
+.show-page-1 .page-1{display: block;background-color: red;}
+.show-page-2 .page-2{display: block;background-color: orange;}
+.show-page-3 .page-3{display: block;background-color: purple;}
+.show-page-4 .page-4{display: block;background-color: green;}
+.show-page-5 .page-5{display: block;background-color: blue;}
+</style>
+</head>
+
+<body>
+<h1>不服你摇，看我72变</h1>
+<div class="page show-page-1">
+	<div class="page-1">变成猪</div>
+	<div class="page-2">变成猫</div>
+	<div class="page-3">变成鹅</div>
+	<div class="page-4">变成羊</div>
+	<div class="page-5">变成鸭</div>
+</div>
+
+<script type="text/javascript">
+var shake_threshold = 1200; // 摇动的阀值
+var last_update = 0;// 保存上次更新的时间
+var frequency = 200;// 摇一摇的时间间隔
+var x, y, z, last_x, last_y, last_z,callback; // x：横向贯穿手机屏幕 y：纵向贯穿手机屏幕 z：垂直手机屏幕
+var isMotionAble = window.DeviceMotionEvent;  //判断是否支持加速度传感器
+var MotionAble = {
+    /**
+     * 设备旋转后的回调方法
+     * @method deviceMotionHandler
+     * @private
+     * @param {Event} eventData 事件对象
+    */
+    deviceMotionHandler : function(eventData){
+        var acceleration = eventData.accelerationIncludingGravity;
+
+        var curTime = +new Date;
+
+        if (curTime - last_update > frequency) {
+
+            var diffTime = curTime - last_update;
+            last_update = curTime;
+
+            x = acceleration.x;
+            y = acceleration.y;
+            z = acceleration.z;
+
+            var speed = Math.abs(x +y + z - last_x - last_y - last_z) / diffTime * 10000;
+
+            if (speed > shake_threshold) {
+                callback && callback();
+            }
+            last_x = x;
+            last_y = y;
+            last_z = z;
+        }
+    },
+    /**
+     * 初始化摇一摇的方法
+     * @method init
+     * @param {Function} fn 设备摇一摇后的回调方法
+     * @param {Number} [frequency:200] 检测摇一摇的时间间隔
+    */
+    init : function(fn,freq){
+        if(isMotionAble){
+            window.addEventListener("devicemotion", this.deviceMotionHandler,false);
+            callback = fn;
+            x = y = z = last_x = last_y = last_z = 0;
+            frequency = freq||frequency;
+        }
+    }
+}
+
+var currentPageIndex = 1;//当前页面的索引值
+var pageNum = document.querySelector(".page").children.length;
+//随机显示页面
+var getRandomPage = function(){
+  	var v = parseInt(Math.random() * pageNum) + 1;
+	while(v == currentPageIndex){
+		v = parseInt(Math.random() * pageNum) + 1;    			
+	}
+	currentPageIndex = v;
+	return v;
+};
+
+function showRandomTheme(index){
+	currentPageIndex = getRandomPage();
+	document.querySelector(".page").className = "page show-page-" + (index||currentPageIndex);
+
+}
+showRandomTheme();
+var lastTime = +new Date();
+MotionAble.init(
+	function(){
+	    var now = +new Date();
+	    if(now - lastTime > 1000){  //一秒内只能切换一次
+	    	showRandomTheme();
+	    	lastTime = +new Date();
+	    }
+	},
+	200
+)
+</script>
+
+</body>
+
+</html>

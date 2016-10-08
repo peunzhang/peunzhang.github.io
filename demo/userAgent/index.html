@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="black" name="apple-mobile-web-app-status-bar-style">
+<meta content="telephone=no" name="format-detection">
+<meta content="email=no" name="format-detection">
+<title>查看userAgent</title>
+<style type="text/css">
+body,p,ul,li,h1,form,fieldset,legend,input,textarea,pre{margin:0;padding:0;}
+h1,h2,h3,h4,h5,h6{font-size:100%;}
+ul,dl,ol{list-style:none;}
+img,fieldset,input[type="submit"]{border:0 none;}
+img{display:inline-block;overflow:hidden;vertical-align:top;}
+em{font-style:normal;}
+strong{font-weight:normal;}
+table{border-collapse:collapse;border-spacing:0;}
+button,input[type="button"]{cursor:pointer;border:0 none;}
+textarea{word-wrap:break-word;resize:none;}
+input[type="number"]{-webkit-user-select:text;}
+input,select,textarea{outline:none;}
+a{text-decoration:none;}
+p{font-size: 25px;}
+.copyright {
+    text-align: center;
+    position: fixed;
+    bottom: 20px;
+    left: 0;
+    width: 100%;
+    height: 24px;
+    line-height: 24px;
+    font-size: 14px;
+    color: #333333;
+}
+.copyright a {
+    color: #3c6f1d;
+}
+</style>
+</head>
+<body>
+<p id="userAgent"></p>
+<br/>
+<p id="system"></p>
+<p id="devicePixelRatio"></p>
+<p id="resolutionWidth"></p>
+<p id="resolutionHeight"></p>
+<p class="copyright">Copyright 2015 Design By <a href="http://www.cnblogs.com/PeunZhang/" target="_blank">白树</a></p>
+<script type="text/javascript" src="../js/zepto.min.js"></script>
+<script type="text/javascript" src="../js/zepto.event.min.js"></script>
+<script type="text/javascript" src="../js/zepto.ie.min.js"></script>
+<script type="text/javascript" src="../js/zepto.detect.min.js"></script>
+<script>
+$(function(){
+	$("#userAgent").text(navigator.userAgent);
+	$("#devicePixelRatio").text("devicePixelRatio: " + window.devicePixelRatio);
+    $("#resolutionWidth").text("分辨率宽: " + screen.width);
+    $("#resolutionHeight").text("分辨率宽: " + screen.height);
+	if ($.os.phone || $.os.tablet) {
+		var usergent = "系统：" + ($.os.wp ? "wphone" : ($.os.ios ? "ios" : ($.os.android ? "android" : "other"))) + " " + $.os.version;
+		$("#system").text(usergent);
+	}
+	else return
+})
+</script>
+
+</body>
+</html>

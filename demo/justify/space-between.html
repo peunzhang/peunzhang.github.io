@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>文本2端对齐 - flex</title>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+<style type="text/css">
+
+*{padding: 0;margin: 0;}
+html,body{height: 100%}
+ul{list-style: none;}
+.plist {
+  position: relative;
+  padding: 9px 15px;
+  background-color: #fff;
+}
+.plist .plist-li {
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  font-size: 15px;
+  line-height: 27px;
+}
+.plist .plist-li .l {
+  width: 90px;
+  white-space: nowrap;
+  color: #888888;
+  display: -webkit-box;
+  display: -webkit-flex;
+  display: -ms-flexbox;
+  display: flex;
+  -webkit-box-pack: justify;
+  -webkit-justify-content: space-between;
+      -ms-flex-pack: justify;
+          justify-content: space-between;
+}
+.plist .plist-li .l > span {
+  display: block;
+}
+.plist .plist-li .r {
+  -webkit-box-flex: 1;
+  -webkit-flex: 1;
+      -ms-flex: 1;
+          flex: 1;
+  color: #333333;
+}
+</style>
+</head>
+<body>
+
+<ul class="plist">
+	<li class="plist-li">
+		<div class="l"><span>商</span><span>户</span><span>名</span><span>称：</span></div>
+		<div class="r">麦当劳</div>
+	</li>
+	<li class="plist-li">
+		<div class="l"><span>服</span><span>务</span><span>商</span><span>名</span><span>称：</span></div>
+		<div class="r">李振</div>
+	</li>
+	<li class="plist-li">
+		<div class="l"><span>对</span><span>接</span><span>BD：</span></div>
+		<div class="r">李振</div>
+	</li>
+	<li class="plist-li">
+		<div class="l"><span>铺</span><span>设</span><span>门</span><span>店：</span></div>
+		<div class="r">1000家</div>
+	</li>
+	<li class="plist-li">
+		<div class="l"><span>收</span><span>件</span><span>人：</span></div>
+		<div class="r">张扬</div>
+	</li>
+	<li class="plist-li">
+		<div class="l"><span>联</span><span>系</span><span>电</span><span>话：</span></div>
+		<div class="r">123456789</div>
+	</li>
+	<li class="plist-li">
+		<div class="l"><span>收</span><span>货</span><span>地</span><span>址：</span></div>
+		<div class="r">广东省 深圳市 南山区 科技一路1108号腾讯大厦1楼</div>
+	</li>
+	<li class="plist-li">
+		<div class="l"><span>邮</span><span>编：</span></div>
+		<div class="r">李振</div>
+	</li>
+</ul>
+
+</body>
+</html>

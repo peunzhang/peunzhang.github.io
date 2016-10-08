@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html class="narrow-screen">
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="black" name="apple-mobile-web-app-status-bar-style">
+<meta content="telephone=no" name="format-detection">
+<meta content="email=no" name="format-detection">
+<title>rem参考案例</title>
+<style type="text/css">
+*{padding: 0;margin: 0;}
+
+html{font-size:10px}/*默认配置*/
+@media screen and (min-width:321px) and (max-width:375px){html{font-size:11px}}
+@media screen and (min-width:376px) and (max-width:414px){html{font-size:12px}}
+@media screen and (min-width:415px) and (max-width:639px){html{font-size:15px}}
+@media screen and (min-width:640px) and (max-width:719px){html{font-size:20px}}
+@media screen and (min-width:720px) and (max-width:749px){html{font-size:22.5px}}
+@media screen and (min-width:750px) and (max-width:799px){html{font-size:23.5px}}
+@media screen and (min-width:800px){html{font-size:25px}}
+
+/*
+使用px前的代码
+.btn{display:block;width: 250px;height:42px;line-height:42px;border-radius:5px;text-align:center;font-size:18px;background-color:#04BE02;color:#FFFFFF;margin: 50px;}
+*/
+
+.btn{display:block;width: 25rem;height:4.2rem;line-height:4.2rem;border-radius:0.5rem;text-align:center;font-size:1.8rem;background-color:#04BE02;color:#FFFFFF;margin: 5rem;}
+
+</style>
+</head>
+
+<body>
+<a href="javascript:;" class="btn">拖动缩放窗口看下我的变化</a>
+</body>
+</html>

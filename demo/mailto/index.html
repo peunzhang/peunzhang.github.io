@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="black" name="apple-mobile-web-app-status-bar-style">
+<meta content="telephone=no" name="format-detection">
+<meta content="email=no" name="format-detection">
+<title>mailto</title>
+</head>
+
+<body style="padding:20px">
+<h1>基本用法</h1>
+<a href="mailto:peun@foxmail.com" target="_blank">单击这里给peun发电子邮件</a>
+
+<h2>在收件人地址后用?cc=开头，你可以填写抄送地址</h2>
+<a href="mailto:peun@foxmail.com?cc=lina@qq.com">单击这里给peun发电子邮件</a>
+
+<h2>紧跟着抄送地址之后，写上&bcc=，就可以填上密件抄送地址</h2>
+<a href="mailto:peun@foxmail.com?cc=lina@qq.com&bcc=luna@qq.com">单击这里给peun发电子邮件</a>
+
+<h2>包含多个收件人、抄送、密件抄送人，用分号隔开多个收件人的地址即可实现</h2>
+<a href="mailto:peun@foxmail.com;dana@foxmail.com">单击这里给peun发电子邮件</a>
+
+
+<h2>包含主题，用?subject=可以填上主题</h2>
+<a href="mailto:peun@foxmail.com?subject=【邀请函】">单击这里给peun发电子邮件</a>
+
+<h2>包含内容，用?body=可以填上内容</h2>
+<a href="mailto:peun@foxmail.com?subject=【邀请函】&body=邀请您参加腾讯onepiece分享">单击这里给peun发电子邮件</a>
+
+<h2>完整示例，如果Mailto后面同时有多个参数的话，第一个参数必须以“?”开头，后面的每一个都以“&”开头</h2>
+<a href="mailto:peun@xxx.com;bbb@xxx.com;ccc@xxx.com?cc=ddd@yyy.com;eee@yyy.com&bcc=fff@zzz.com&subject=【邀请函】&body=邀请您参加腾讯onepiece分享">单击这里给peun发电子邮件</a>
+
+<h2>邮件内容包含链接</h2>
+<a href="mailto:peun@foxmail.com?body=http://www.cnblogs.com/PeunZhang/">单击这里给peun发电子邮件</a>
+    
+<h2>邮件内容包含图片</h2>
+<a href="mailto:peun@foxmail.com?body=<img src='http://images.cnblogs.com/cnblogs_com/PeunZhang/286351/o_peunzhang_cnblogs_code.png' width='200' height='200'>">单击这里给peun发电子邮件</a>
+
+    
+</body>
+</html>
+ 
+
+
+

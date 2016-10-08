@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>文本2端对齐</title>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+<style type="text/css">
+
+*{padding: 0;margin: 0;}
+html,body{height: 100%}
+ul{list-style: none;}
+.list {
+	padding: 0 20px;
+	margin: 20px auto;
+}
+
+.list li {
+	height: 40px;
+	line-height: 40px;
+	border-bottom: 1px #000 solid;
+	padding: 0 20px;
+	overflow: hidden;
+}
+
+.list li .text {
+	display: inline-block;
+	width: 90px;
+	height: 40px;
+	 margin-right: 15px;
+	 float: left;
+	 text-align:justify;
+     text-align-last:justify;
+     height:44px;
+     font-size: 12px;
+}
+.list li .text:after{
+     display:inline-block;
+     overflow:hidden;
+     width:100%;
+     height:0;
+     content:'';
+     vertical-align:top;
+}
+</style>
+</head>
+<body>
+
+ <ul class="list">
+ 	<li>
+ 		<span class="text">银 行 卡 号</span>
+ 		<input type="text" placeholder="请输入银行卡号"/> 
+ 	</li>
+ 	<li>
+ 		<span class="text">卡 号</span>
+ 		<input type="text" placeholder="请输入卡号"/> 
+ 	</li>
+ 	<li>
+ 		<span class="text">电 话 号</span>
+ 		<input type="text" placeholder="请输入电话号"/> 
+ 	</li>
+ 	<li>
+ 		<span class="text">身 份 证 地 址</span>
+ 		<input type="text" placeholder="请输入身份证地址"/> 
+ 	</li>
+ </ul>
+
+</body>
+</html>

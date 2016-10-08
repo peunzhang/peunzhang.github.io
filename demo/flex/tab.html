@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>flex上下固定中间滚动布局</title>
+    <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=0" name="viewport">
+<style type="text/css">
+
+*{padding: 0;margin: 0;}
+html,body{height: 100%}
+ul{list-style: none;}
+.wrap{width: 100%;height: 100%;}
+.tab{height:40px;line-height:40px;background-color:#D8D8D8;}
+.tab li{width: 25%;}
+.main{overflow:auto;-webkit-overflow-scrolling: touch;}
+.main-li{height: 100%;}
+.hide{display: none!important;}
+/* ============================================================
+   flex：定义布局为盒模型
+   flex-v：盒模型垂直布局
+   flex-1：子元素占据剩余的空间
+   flex-align-center：子元素垂直居中
+   flex-pack-center：子元素水平居中
+   flex-pack-justify：子元素两端对齐
+   兼容性：ios 4+、android 2.3+、winphone8+
+   ============================================================ */
+.flex{display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;}
+.flex-v{-webkit-box-orient:vertical;-webkit-flex-direction:column;-ms-flex-direction:column;flex-direction:column;}
+.flex-1{-webkit-box-flex:1;-webkit-flex:1;-ms-flex:1;flex:1;}
+.flex-align-center{-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;}
+.flex-pack-center{-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;}
+.flex-pack-justify{-webkit-box-pack:justify;-webkit-justify-content:space-between;-ms-flex-pack:justify;justify-content:space-between;}
+</style>
+</head>
+<body>
+<div class="wrap flex flex-v">
+    <div class="main flex-1">
+      <div class="main-li" style="background-color: yellow;">
+      <iframe src="../demo/d5px/border.html" frameborder="0" width="100%"></iframe>
+      </div>
+      <div class="main-li hide" style="background-color: red;">
+      <iframe src="http://1.peunzhang.sinaapp.com/demo/d5px/height.html" frameborder="0" width="100%"></iframe>
+      </div>
+      <div class="main-li hide" style="background-color: blue;">
+      <iframe src="http://1.peunzhang.sinaapp.com/demo/d5px/border.html" frameborder="0" width="100%"></iframe>
+      </div>
+      <div class="main-li hide" style="background-color: green;">
+      <iframe src="http://1.peunzhang.sinaapp.com/demo/d5px/height.html" frameborder="0" width="100%"></iframe>
+      </div>
+    </div>
+    <ul class="tab flex">
+      <li>菜单一</li>
+      <li>菜单二</li>
+      <li>菜单三</li>
+      <li>菜单四</li>
+    </ul>
+</div>
+<script type="text/javascript" src="../js/zepto.min.js"></script>
+<script type="text/javascript" src="../js/zepto.event.min.js"></script>
+<script type="text/javascript">
+$(function(){
+  $(".tab li").on('click',function(){
+    var num = $(this).index();
+    $(".main-li").addClass("hide");
+    $(".main-li").eq(num).removeClass("hide");
+  })
+  $(window).on('load resize',function(){
+    var mainHeight = $(".main").height()
+    $("iframe").height(mainHeight);
+  })
+  
+})
+</script>
+</body>
+</html>

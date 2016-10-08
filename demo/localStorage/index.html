@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="black" name="apple-mobile-web-app-status-bar-style">
+<meta content="telephone=no" name="format-detection">
+<meta content="email=no" name="format-detection">
+<title>localStorage</title>
+<style>
+/* 按钮 */
+.btn{display:block;position: relative;-webkit-box-sizing:border-box;box-sizing:border-box;width:400px;height:42px;-webkit-border-radius:5px;border-radius:5px;text-align:center;font-size:18px;line-height:42px;-webkit-tap-highlight-color:rgba(0,0,0,0);text-decoration:none;color:#FFFFFF;}
+.btn:before{content:'';position:absolute;top:-50%;bottom:-50%;left:-50%;right:-50%;-webkit-transform:scale(0.5);transform:scale(0.5);-webkit-box-sizing:border-box;box-sizing:border-box;border-style:solid;border-width:1px;-webkit-border-radius:10px;border-radius:10px;}
+.btn-green{background-color:#04BE02;}
+.btn-green:before{border-color:#199D18;}
+.btn-red{background-color:red;}
+.btn-red:before{border-color:#CDCDCD;}
+</style>
+</head>
+
+<body>
+
+<div class="btn btn-green">确定</div>
+<br/><br/>
+<a href="javascript:;" id="changeBtn">改变按钮颜色并存储在本地</a>
+<br/><br/>
+<a href="javascript:;" id="returnBtn">删除本地数据并恢复按钮颜色</a>
+
+<script type="text/javascript" src="../js/zepto.min.js"></script>
+<script type="text/javascript" src="../js/zepto.event.min.js"></script>
+<script type="text/javascript">
+var changeBtn = $("#changeBtn")[0],
+	changeBtnId = changeBtn.id;
+
+if(localStorage.getItem(changeBtnId)){
+	$(".btn").attr("class","btn btn-red");
+}
+
+$("#changeBtn").on("click",function(){
+	localStorage.setItem(changeBtnId,"1");
+	$(".btn").attr("class","btn btn-red");
+})
+
+$("#returnBtn").on("click",function(){
+	localStorage.removeItem(changeBtnId);
+	$(".btn").attr("class","btn btn-green");
+})
+</script>
+</body>
+</html>
+ 
+
+

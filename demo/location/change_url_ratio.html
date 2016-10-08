@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no" name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="black" name="apple-mobile-web-app-status-bar-style">
+<meta content="telephone=no" name="format-detection">
+<meta content="email=no" name="format-detection">
+<title>demo</title>
+<style>
+
+.hide{display: none;}
+[class^=".mod-"]{width: 100%;height: 300px;}   
+.mod-green{background-color: green;}
+.mod-red{background-color: red;}
+
+
+</style>
+</head>
+<body>
+
+<p>url后加入?show-red可 隐藏绿色模块 并显示红色模块</p>
+<div class="main">
+    <div class="mod-green">green</div>
+    <div class="mod-red hide">red</div>
+</div>
+
+
+<script type="text/javascript">
+var url = location.href,
+    mod_green = document.querySelector(".mod-green"),
+    mod_red = document.querySelector(".mod-red");
+
+if(url.indexOf("?show-red") != -1){//如果存在参数，则运行
+  mod_green.className = "mod-green hide";
+  mod_red.className = "mod-red";
+}
+
+</script>
+</body>
+</html>

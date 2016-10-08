@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta content="width=device-width,initial-scale=1,maximum-scale=1.0,user-scalable=no" name="viewport">
+<meta content="yes" name="apple-mobile-web-app-capable">
+<meta content="black" name="apple-mobile-web-app-status-bar-style">
+<meta content="telephone=no" name="format-detection">
+<meta content="email=no" name="format-detection">
+<title>点5测试 - scale</title>
+<style type="text/css">
+.line {
+	height: 50px;
+	line-height: 50px;
+	background-color: #CCC;
+    border-bottom:1px solid red
+} 
+    
+.scale {
+	position: relative;
+	height: 50px;
+	line-height: 50px;
+	background-color: #CCC
+}
+.scale:after {
+	position: absolute;
+	content: '';
+	width: 100%;
+	left: 0;
+	bottom: 0;
+	height: 1px;
+	background-color: red;
+	-webkit-transform: scale(1,.5);
+	transform: scale(1,.5);
+	-webkit-transform-origin: center bottom;
+	transform-origin: center bottom
+}
+</style>
+</head>
+
+<body>
+<div class="line">1px</div>
+<br/><br/>    
+<div class="scale">0.5px</div>
+</body>
+
+</html>

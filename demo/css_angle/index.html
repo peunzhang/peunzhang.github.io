@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>css三角生成工具</title>
+<style type="text/css">
+body,p,ul,li,h1,form,fieldset,legend,input,textarea,pre{margin:0;padding:0;}
+h1,h2,h3,h4,h5,h6{font-size:100%;}
+ul,dl,ol{list-style:none;}
+img,fieldset,input[type="submit"]{border:0 none;}
+img{display:inline-block;overflow:hidden;vertical-align:top;}
+em{font-style:normal;}
+strong{font-weight:normal;}
+table{border-collapse:collapse;border-spacing:0;}
+button,input[type="button"]{cursor:pointer;border:0 none;}
+textarea{word-wrap:break-word;resize:none;}
+input[type="number"]{-webkit-user-select:text;}
+input,select,textarea{outline:none;}
+a{text-decoration:none;}
+body{padding-top: 100px;font-family: \5FAE\8F6F\96C5\9ED1;}
+.wrap{width: 1000px;margin: 0 auto;position: relative;padding-bottom: 70px;}
+.btn{display:block;-webkit-box-sizing:border-box;box-sizing:border-box;width:100%;height:48px;-webkit-border-radius:5px;border-radius:5px;text-align:center;font-size:18px;line-height:48px;-webkit-tap-highlight-color:rgba(0,0,0,0);text-decoration:none;}
+.btn-blue{background-color:#A5C3FF;color:#FFFFFF!important;}
+.btn-blue:hover{background-color:#8EB4FF;color:rgba(255,255,255,0.6);}
+.btn-blue:active{background-color:#98BAFF;color:rgba(255,255,255,0.6);}
+.hidden{visibility: hidden;}
+.pos-hide{position: absolute;left: -9999px!important;top: -9999px!important;}
+.form{-webkit-box-sizing:border-box;box-sizing:border-box;}
+.clearfix{*zoom:1;}
+.clearfix:after{content: '';display: block;height: 0;overflow: hidden;visibility: hidden;clear: both;}
+.form input::-webkit-input-placeholder,.form textarea::-webkit-input-placeholder{color:#AAAAAA;}
+.form input:focus::-webkit-input-placeholder,.form textarea:focus::-webkit-input-placeholder{color:#EEEEEE;}
+.form-title{padding-bottom:40px;font-size: 28px;color: #333333;}
+.form-line{padding-bottom:10px;float: left;width: 300px;margin-right: 20px;}
+.form-btn{width: 176px;}
+.form-line .label{display:block;font-size:18px;color:#666666;margin-bottom:10px;}
+.form-line .element{padding-bottom:6px;}
+.ico-clear{display:inline-block;width:22px;height:22px;padding:11px;background:url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABYAAAAWCAYAAADEtGw7AAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsMAAA7DAcdvqGQAAAJSSURBVEhLjZXHbhsxEEA3n5AAySWX/KD9DXY+Jz7agASo92ZddIih4qhckosOVoGKJTHziJ0FV+LaXoAgRQ7fFM6MgiDhGwwGX8vl8lWj0fhVr9efZV4wwvUdZ8gk3ffuC+BWxotAjMzeEZ691Gq1m3fh4/H4Ry6Xa3NJLiRCVRlyjGw22+GuV8FsNvvebDb/IlitVk2lUvkQGAMY7Xb7H4wY3BjzSSz97QiZTqdjSqWSEWWJoUC5escMA1YEb7VaNwhhKaDj8Wj2+72F5/P5CzgGsC8WmvV6bXq9npHHtF7CsuDpdPpZYK8IA0bzZrMRxcbsdjtcjOAoRU4sMxJTK8PX7/dNsVi0ZyJzgBkUCoWrcMO6jGZ+r1arC3jobgyKAkLGXVUMM5CNezelOFTtLpz9VCp1AcV6TwbdB2HCxx7IByeW4mLk/mQysSHxpSVMLKaiLl5e4cR9Pp9HwNPpZIbDoY37G7m+eBNMTNPpdMx9sgWlUhSJqYix3lDggb4+Luu33W7tktnNlnOPNRQP5we+lMJ9Xn+5XHpT8YzxENCl3HTDfeLn5ilr9jSu56lIFrnpJsxrLZADcKBUj/v6QPX1fdlClVKh3NMCkYr8YqtPS1qr73A4WHddqLrqwklBvm63a8FhSd9GveK8CVH70sRtTH0pBZwKZeYRtXlJpjzFmhAaaHkiZNsmlzRuSY2efW2viW1TTadZi9bHjzZ6fZdMJvOY2OjdBi0u/pThrUh9/XBeIPvuX5MrMBqNvkl6XYv1dwKJ/kxl/Yc9zpBJgv4HH+lipHtalLMAAAAASUVORK5CYII=") center center no-repeat;text-indent:-9999px;}
+.form .ico-clear{position:absolute;top:1px;right:0;z-index:1;display:none;}
+.form .show-clear .ico-clear{display:inline-block;}
+.input{border-color:rgba(187,187,187,0.8);border-style:solid;border-width:1px 0;position:relative;overflow: hidden;}
+.input .text{-webkit-appearance:none;appearance:none;border:none;width: 100%;-webkit-box-sizing: border-box;box-sizing: border-box;font-size:18px;padding:12px 10px;display:block;background-color: #FFFFFF;}
+.input.bdrs{border-width:1px;border-radius:4px;}
+.input.bdrs .text{border-radius:4px;}
+.angle-title{display: block;font-size: 18px;font-weight: normal;color: #666666;margin-bottom: 10px;}
+.angle-ui li{cursor:pointer;float:left;padding: 30px;margin-bottom: 10px;margin-right: 10px;background-color: #FAFAFA;border: 1px dashed #A5C3FF;cursor: pointer;text-align: center;display:-webkit-box;display:-webkit-flex;display:-ms-flexbox;display:flex;-webkit-box-align:center;-webkit-align-items:center;-ms-flex-align:center;align-items:center;-webkit-box-pack:center;-webkit-justify-content:center;-ms-flex-pack:center;justify-content:center;}
+.angle-ui li.on{border-style: solid;}
+.angle-ui li strong{width:0;height:0;overflow:hidden;font-size:0;display:inline-block;}
+.angle-style{position: relative;height: 270px;overflow: hidden;}
+.angle-style li{height: 260px;margin-bottom: 10px;margin-right: 10px;border: 1px solid #A5C3FF;position: absolute;left: 0;top: 0;}
+.angle-style pre{font-family: \5FAE\8F6F\96C5\9ED1;font-size: 16px;padding: 20px;width: 578px;height: 220px;border: none;background-color: #FFFFFF;word-wrap:break-word;}
+.angle-style .copy{position: absolute;right: 10px;bottom: 10px;color: #A5C3FF;font-size: 16px;text-decoration: none;}
+.tips{position: fixed;width: 180px;height: 40px;line-height: 40px;font-size: 16px;left: 50%;margin-left: -90px;top: 50%;margin-top: -20px;background-color: #DFEDFA;border: 7px solid #A5C3FF;text-align: center;color: #000000;}
+.ani-wrap{display: none\9;}
+.ani-wrap{width:50px;height:50px;position:absolute;top:-30px;left:340px;z-index:10;
+	-webkit-animation:ani-wrap 0.5s linear 1 3s forwards;
+	animation:ani-wrap 0.5s linear 1 3s forwards}
+@-webkit-keyframes ani-wrap{0%{-webkit-transform:translate(0,0) scale(1)}
+100%{-webkit-transform:translate(-80px,24px) scale(0.7)}
+}
+@keyframes ani-wrap{0%{transform:translate(0,0) scale(1)}
+100%{transform:translate(-80px,24px) scale(0.7)}
+}
+.ani{width:50px;height:50px;position:absolute;left:0;top:0;-webkit-transform:rotate(45deg);transform:rotate(45deg);}
+
+.ani-t,.ani-r,.ani-b,.ani-l{display:inline-block;width:0;height:0;overflow:hidden;font-size:0;border-width:25px;position:absolute;left:0;top:0}
+.ani-t{border-color:red transparent transparent transparent;border-style:solid dashed dashed dashed;-webkit-transform:rotate(135deg) translate(-50px,50px);transform:rotate(135deg) translate(-50px,50px);-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-animation:ani-t 5.5s linear 1 1s forwards;animation:ani-t 5.5s linear 1 1s forwards}
+.ani-r{border-color:transparent green transparent transparent;border-style:dashed solid dashed dashed;-webkit-transform:rotate(45deg);transform:rotate(45deg);-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-animation:ani-r 4.5s linear 1 2s forwards;animation:ani-r 4.5s linear 1 2s forwards}
+.ani-b{border-color:transparent transparent blue transparent;border-style:dashed dashed solid dashed;-webkit-transform:rotate(-45deg);transform:rotate(-45deg);-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-animation:ani-b 4.5s linear 1 2s forwards;animation:ani-b 4.5s linear 1 2s forwards}
+.ani-l{border-color:transparent transparent transparent purple;border-style:dashed dashed dashed solid;-webkit-transform:rotate(-135deg) translate(50px,-50px);transform:rotate(-135deg) translate(50px,-50px);-webkit-transform-origin:right bottom;transform-origin:right bottom;-webkit-animation:ani-l 5.5s linear 1 1s forwards;animation:ani-l 5.5s linear 1 1s forwards}
+@-webkit-keyframes ani-t{0%{-webkit-transform:rotate(135deg) translate(-100px,100px)}
+20%{-webkit-transform:rotate(0deg) translate(0,0)}
+100%{-webkit-transform:rotate(0deg) translate(0,0)}
+}
+@keyframes ani-t{0%{transform:rotate(135deg) translate(-100px,100px)}
+20%{transform:rotate(0deg) translate(0,0)}
+100%{transform:rotate(0deg) translate(0,0)}
+}
+@-webkit-keyframes ani-r{0%{-webkit-transform:rotate(45deg)}
+10%{-webkit-transform:rotate(0deg) translate(0,0)}
+100%{-webkit-transform:rotate(0deg) translate(0,0)}
+}
+@keyframes ani-r{0%{transform:rotate(45deg)}
+10%{transform:rotate(0deg) translate(0,0)}
+100%{transform:rotate(0deg) translate(0,0)}
+}
+@-webkit-keyframes ani-b{0%{-webkit-transform:rotate(-45deg)}
+10%{-webkit-transform:rotate(0deg) translate(0,0)}
+100%{-webkit-transform:rotate(0deg) translate(0,0)}
+}
+@keyframes ani-b{0%{transform:rotate(-45deg)}
+10%{transform:rotate(0deg) translate(0,0)}
+100%{transform:rotate(0deg) translate(0,0)}
+}
+@-webkit-keyframes ani-l{0%{-webkit-transform:rotate(-135deg) translate(100px,-100px)}
+20%{-webkit-transform:rotate(0deg) translate(0,0)}
+100%{-webkit-transform:rotate(0deg) translate(0,0)}
+}
+@keyframes ani-l{0%{transform:rotate(-135deg) translate(100px,-100px)}
+20%{transform:rotate(0deg) translate(0,0)}
+100%{transform:rotate(0deg) translate(0,0)}
+}
+.copyright{text-align:center;position:fixed;bottom:20px;left:0;width:100%;height:24px;line-height:24px;font-size:14px;color:#333333;}
+.copyright a{color:#3c6f1d;}
+</style>
+</head>
+<body>
+<div class="wrap">
+	<div class="form clearfix">
+		<h1 class="form-title">css三角生成器v1.0</h1>
+		<div class="form-line">
+			<label for="" class="label">请输入border-width的值</label>
+			<div class="input bdrs show-clear">
+				<input type="text" class="text" placeholder="如10px" id="borderWidth" value="10px">
+				<a href="javascript:" class="ico-clear">清除</a>
+			</div>
+		</div>
+		<div class="form-line">
+			<label for="" class="label">请输入border-color的值</label>
+			<div class="input bdrs show-clear">
+				<input type="text" class="text" placeholder="如#000或rgba(255,255,0,0.5)" id="borderColor" value="#A5C3FF">
+				<a href="javascript:" class="ico-clear">清除</a>
+			</div>
+		</div>
+		<div class="form-line form-btn">
+			<label for="" class="label hidden">生成图形和样式</label>
+			<a href="javascript:;" class="btn btn-blue" id="btnGenerate">生成图形</a>
+		</div>
+	</div>
+	<div class="ani-wrap">
+		<div class="ani">
+			<div class="ani-t"></div>
+			<div class="ani-r"></div>
+			<div class="ani-b"></div>
+			<div class="ani-l"></div>
+		</div>
+	</div>
+	<div class="angle hidden">
+		<h2 class="angle-title">点击图形即可查看样式</h2>
+		<ul class="angle-ui clearfix" id="angleUi">
+		</ul>
+		<ul class="angle-style clearfix" id="angleStyle">
+			<li class="a pos-hide">
+				<pre></pre>
+				<a href="javascpipt:;" class="copy">复制代码</a>
+			</li>
+			<li class="b pos-hide">
+				<pre></pre>
+				<a href="javascpipt:;" class="copy">复制代码</a>
+			</li>
+			<li class="c pos-hide">
+				<pre></pre>
+				<a href="javascpipt:;" class="copy">复制代码</a>
+			</li>
+			<li class="d pos-hide">
+				<pre></pre>
+				<a href="javascpipt:;" class="copy">复制代码</a>
+			</li>
+			<li class="e pos-hide">
+				<pre></pre>
+				<a href="javascpipt:;" class="copy">复制代码</a>
+			</li>
+			<li class="f pos-hide">
+				<pre></pre>
+				<a href="javascpipt:;" class="copy">复制代码</a>
+			</li>
+			<li class="g pos-hide">
+				<pre></pre>
+				<a href="javascpipt:;" class="copy">复制代码</a>
+			</li>
+			<li class="h pos-hide">
+				<pre></pre>
+				<a href="javascpipt:;" class="copy">复制代码</a>
+			</li>
+		</ul>
+		
+	</div>
+</div>
+<p class="copyright">Copyright 2015 Design By <a href="http://www.cnblogs.com/PeunZhang/" target="_blank">白树</a></p>
+    
+<script type="text/javascript" src="..js/jquery.min.js"></script>
+<script type="text/javascript" src="..js/jquery.zclip.min.js"></script>
+
+<script>
+$(function(){
+	//清除表单内容
+	$(".ico-clear").on("click",function(){
+		$(this).prev().val("");
+		$(this).parent().removeClass("show-clear");
+	})
+	//自动删除字符串左右两端的空格
+	function deleteSpace(str){ 
+		return str.replace(/^\s+|\s+$/g, ""); 
+	} 
+	$(".text").on("blur",function(){
+		var returnVal = deleteSpace($(this).val());
+		$(this).val(returnVal);
+	})
+	//清除按钮
+	$(".text").on("keyup",function(){
+		if($(this).val().length > 0){
+			$(this).parent().addClass("show-clear");
+			$(this).zclip('show');
+		}
+		else{
+			$(this).parent().removeClass("show-clear");
+		}
+	})
+	//图形和样式变量
+	var cssText,
+		cssTextValue,
+		borderWidthValue,
+		borderColorValue,
+		angleUi = $("#angleUi"),
+    	angleStyle = $("#angleStyle"),
+    	temporaryStyle = $("#temporaryStyle"),
+    	angle = $(".angle");
+	//重置
+	function reset(){
+		cssText = "";
+        cssTextValue = "";
+		temporaryStyle.remove();
+		angleUi.children().remove();
+		angle.addClass("hidden");
+		angleStyle.children().addClass("pos-hide");
+	}
+	//操作提示
+	function err(text){
+		$("body").find(".tips").remove().end().append("<div class='tips'>" + text + "</div>");
+		setTimeout(function(){
+			$(".tips").fadeOut(1000);
+		},1000)
+	}
+	//匹配过滤无效值
+	function matchWidthValue(widthValue){
+		var matchWidthValue = widthValue.match(/^(\d+(px|rem|em|pt|pc|%|in|cm|mm)\s*){1,4}$/g);
+		if(!matchWidthValue){
+			err("width值不合法");
+			return false;
+		}
+		var widthValueArray = widthValue.split(/\s+/g),
+			num = widthValueArray.length;
+		if(num > 1&&num < 5){
+			$(".angle-ui li:gt(3)").remove();
+		}
+	}
+	//匹配过滤无效颜色值
+	function matchColorValue(ColorValue){
+		var match16 = ColorValue.match(/(^#[0-9a-fA-F]{3}$)|(^#[0-9a-fA-F]{6}$)|(^(red|blue|yellow|orange|purple|green|black|white|gray|pink|brown)$)/g),
+			matchRGB = ColorValue.match(/^[rR][gG][bB][\(](\s*(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\s*,){2}\s*(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\s*[\)]$/g),
+			matchRGBA = ColorValue.match(/^[rR][gG][bB][aA][\(](\s*(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\s*,){3}\s*((0?\.[1-9]{1,2})|[01])\s*[\)]$/g);
+			
+		if (match16 || matchRGB || matchRGBA) { 
+			return true; 
+	    } 
+		else{
+			err("color值不合法");
+			return false; 
+		}
+
+	}	
+	//图形和样式
+	function generate(){
+		reset();
+		borderWidthValue = $("#borderWidth").val();
+		borderColorValue = $("#borderColor").val();
+		var angleBaseStyle = "display:inline-block;width:0;height:0;overflow:hidden;font-size:0;",
+			angleExtendStyle = {
+	        a : "border-width:"+ borderWidthValue + ";border-color:"+ borderColorValue +" transparent transparent transparent;border-style:solid dashed dashed dashed",
+	        b : "border-width:"+ borderWidthValue + ";border-color:transparent "+ borderColorValue +" transparent transparent;border-style:dashed solid dashed dashed",
+	        c : "border-width:"+ borderWidthValue + ";border-color:transparent transparent "+ borderColorValue +" transparent;border-style:dashed dashed solid dashed",
+	        d : "border-width:"+ borderWidthValue + ";border-color:transparent transparent transparent "+ borderColorValue +";border-style:dashed dashed dashed solid",
+	        e : "border-left:"+ borderWidthValue + " solid "+ borderColorValue +";border-top:"+ borderWidthValue + " dashed transparent",
+	        f : "border-left:"+ borderWidthValue + " solid "+ borderColorValue +";border-bottom:"+ borderWidthValue + " dashed transparent",
+	        g : "border-right:"+ borderWidthValue + " solid "+ borderColorValue +";border-top:"+ borderWidthValue + " dashed transparent",
+	        h : "border-right:"+ borderWidthValue + " solid "+ borderColorValue +";border-bottom:"+ borderWidthValue + " dashed transparent"
+	    }
+		for(var i in angleExtendStyle){
+			$("<li class=" + i +"><strong></strong></li>").appendTo(angleUi);
+			cssText += ".angle-ui" + " ." + i + " strong" + "{"+angleExtendStyle[i]+"}";
+			cssTextValue = ".ico-angle{\n\t" + (angleBaseStyle + angleExtendStyle[i]).replace(/;/g,";\n\t") + "\n}"
+			$("#angleStyle ." + i + " pre").html(cssTextValue);
+		}
+		$("head").append($("<style type='text/css' id='temporaryStyle'>" + cssText + "</style>"));
+		var angleUiLiMaxWidth = Math.max($("#angleUi li").width(),$("#angleUi li").height());
+		$("#angleUi li").width(angleUiLiMaxWidth);
+		$("#angleUi li").height(angleUiLiMaxWidth);
+
+		if(matchWidthValue(borderWidthValue) == false) return;
+		else if(matchColorValue(borderColorValue) == false) return;
+		angle.removeClass("hidden");
+	}
+	//展示代码
+	$("#angleUi li").live("click",function(){
+		var num = $(this).index(),
+			angleStyleName = $(".angle-style li")[num].className.split(" pos-hide")[0];
+		$(this).siblings().removeClass("on");
+		$(this).addClass("on");
+		$(".angle-style li").addClass("pos-hide");
+		$(".angle-style li")[num].className = angleStyleName;
+	})
+	//flash复制
+	$(".angle-style .copy").zclip({
+		path: "./ZeroClipboard.swf",
+		copy: function(){
+			return $(this).prev().text();
+		},
+		afterCopy:function(){
+			err("☺ 复制成功");
+        }
+	});
+	//生成
+	$("#btnGenerate").live("click",function(){
+		generate();
+    })
+    $(".text").on("keydown",function(e){
+		if (e.keyCode == 13) {
+			$(".text").each(function(){
+			    var returnVal = deleteSpace($(this).val());
+				$(this).val(returnVal);
+			 });
+            generate();
+ 		}
+    })  
+})
+</script>
+<script type="text/javascript" src="http://tajs.qq.com/stats?sId=45588381" charset="UTF-8"></script>
+</body>
+</html>
+
