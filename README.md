@@ -12,7 +12,6 @@
 <ul>
 <li>邮箱：peun@foxmail.com</li>
 <li>WebApp前端交流群：104111211</li>
-<li>微信公众帐号：css3-china</li>
 <li>博客园：http://peunzhang.cnblogs.com/</li>
 <li>github：https://github.com/peunzhang</li>
 </ul>
