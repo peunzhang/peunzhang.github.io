@@ -7,11 +7,11 @@
 <li>2011.7大学毕业后加入<a href="http://tid.tenpay.com/" target="_blank">腾讯财付通设计中心</a>，负责财付通PC产品主站、小钱包的页面重构</li>
 <li>2013.1探索移动端开发，负责财付通移动端产品，参与微信红包、微信AA收款、理财通最初的页面框架设计</li>
 <li>2014.3转岗腾讯微信支付设计中心，负责微信支付H5项目，线下运营活动的前端开发</li>
+<li>2017.8转岗腾讯微信支付研发中心，负责小程序产品的前端开发</li>
 </ul>
 <h1>联系方式</h1>
 <ul>
-<li>邮箱：peun@foxmail.com</li>
-<li>WebApp前端交流群：104111211</li>
+<li>邮箱：peun####foxmail.com (####→@)</li>
 <li>博客园：http://peunzhang.cnblogs.com/</li>
 <li>github：https://github.com/peunzhang</li>
 </ul>
