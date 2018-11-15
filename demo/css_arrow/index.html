@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>css箭头生成工具</title>
+<link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+<div class="wrap">
+	<div class="form">
+		<div class="form-title">
+			<h1>css箭头生成器</h1>
+		</div>
+		
+		<div class="form-main">
+            <div class="form-line">
+                <label for="" class="label">箭头的长度</label>
+                <div class="input bdrs show-clear">
+                    <input type="text" class="text" placeholder="如#7px" id="arrowSize" value="7px">
+                    <a href="javascript:" class="ico-clear">清除</a>
+                </div>
+            </div>
+            <div class="form-line">
+                <label for="" class="label">箭头的厚度</label>
+                <div class="input bdrs show-clear">
+                    <input type="text" class="text" placeholder="如2px" id="arrowWidth" value="2px">
+                    <a href="javascript:" class="ico-clear">清除</a>
+                </div>
+            </div>
+            <div class="form-line">
+                <label for="" class="label">箭头的颜色</label>
+                <div class="input bdrs show-clear">
+                    <input type="text" class="text" placeholder="如#000" id="arrowColor" value="#ccc">
+                    <a href="javascript:" class="ico-clear">清除</a>
+                </div>
+            </div>
+			<div class="form-btn">
+				<a href="javascript:;" class="btn btn-blue" id="btnGenerate">生成图形</a>
+			</div>
+		</div>
+		
+	</div>
+	
+	<div class="figure hidden">
+		<h2 class="figure-title">点击图形即可查看样式</h2>
+		<!-- 此处输出图形[[ -->
+		<ul class="figure-ui" id="figureUi">
+			
+		</ul>
+		<!-- 此处输出图形]] -->
+		
+
+		<!-- 此处输出代码[[ -->
+		<ul class="figure-style" id="figureStyle">
+		</ul>	
+		<!-- 此处输出代码]] -->
+		
+	</div>
+</div>
+<p class="copyright">Copyright 2018 Design By <a href="http://www.cnblogs.com/PeunZhang/" target="_blank">白树</a></p>
+    
+<script type="text/javascript" src="../js/jquery-3.3.1.min.js"></script>
+<script type="text/javascript" src="../js/clipboard.min.js"></script>
+<script type="text/javascript" src="js/index.js"></script>
+<script type="text/javascript" src="http://tajs.qq.com/stats?sId=45588381" charset="UTF-8"></script>
+</body>
+</html>
+
