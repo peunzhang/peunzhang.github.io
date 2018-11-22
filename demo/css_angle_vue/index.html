@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>css三角生成工具</title>
+<link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+<div class="wrap">
+	<div class="form">
+		<div class="form-title">
+			<h1>css三角生成工具</h1>
+			<!-- 开场动画[[ -->
+			<div class="ani-wrap">
+				<div class="ani">
+					<div class="ani-t"></div>
+					<div class="ani-r"></div>
+					<div class="ani-b"></div>
+					<div class="ani-l"></div>
+				</div>
+			</div>	
+			<!-- 开场动画]] -->
+		</div>
+		<div class="form-main">
+			<div class="form-line">
+				<label for="" class="label">请输入border-width的值</label>
+				<div 
+					class="input bdrs" 
+					:class="{'show-clear': borderWidthIsActive}"
+				>
+					<input 
+						type="text" 
+						class="text" 
+						placeholder="如10px" 
+						v-model.trim="borderWidthValue" 
+						@blur.prevent="blurWidthFn"
+					>
+					<a href="javascript:" class="ico-clear" @click="clearWidthValue">清除</a>
+				</div>
+			</div>
+			<div class="form-line">
+				<label for="" class="label">请输入border-color的值</label>
+				<div 
+					class="input bdrs" 
+					:class="{'show-clear': borderColorIsActive}"
+				>
+					<input 
+						type="text" 
+						class="text" 
+						placeholder="如#000或rgba(255,255,0,0.5)" 
+						v-model.trim="borderColorValue" 
+						@blur.prevent="blurColorFn"
+					>
+					<a href="javascript:" class="ico-clear" @click="clearColorValue">清除</a>
+				</div>
+			</div>
+			<div class="form-btn">
+				<a href="javascript:;" class="btn btn-blue" @click="checkValue()">生成图形</a>
+			</div>
+		</div>
+		
+	</div>
+	
+	<div class="angle" v-if="isShowAngle">
+		<h2 class="angle-title">点击图形即可查看样式</h2>
+		<!-- 此处输出图形[[ -->
+		<ul class="angle-ui">
+			<li 
+				v-for="item in angleUi" 
+				:class="[item.class.base,item.class.state]" 
+				:key="item.info" 
+				:number="item.number" 
+				@click='getAngleUiLi(item.number)'
+			>
+				<strong 
+				:style="item.style">
+				</strong>
+			</li>
+		</ul>
+		<!-- 此处输出图形]] -->
+		
+
+		<!-- 此处输出代码[[ -->
+		<ul class="angle-style" id="angleStyle">
+			<li 
+				v-for="item in angleStyle" 
+				:class="item.class"
+				:key="item.info" 
+				v-show="item.isShowAngleStyle"
+			>
+				<pre :data-clipboard-text='item.cssTextValue'>{{item.cssTextValue}}</pre>
+				<a href='javascpipt:;' class='copy'>复制代码</a>
+			</li>
+		</ul>	
+		<!-- 此处输出代码]] -->
+		
+	</div>
+
+	<transition name="fade">
+		<div class="tips" v-if="isShowTips">{{isShowTipsText}}</div>
+	</transition>
+</div>
+<p class="copyright">Copyright 2015~2018 Design By <a href="http://www.cnblogs.com/PeunZhang/" target="_blank">白树</a></p>
+ 
+
+<script type="text/javascript" src="../js/clipboard.min-1.5.16.js"></script>
+<!-- <script src="https://vuejs.org/js/vue.js"></script> -->
+<script src="../js/vue-2.5.17.js"></script>
+<script type="module" src="js/index.js" ></script>
+
+
+<script type="text/javascript" src="http://tajs.qq.com/stats?sId=45588381" charset="UTF-8"></script>
+</body>
+</html>
+
