@@ -48,7 +48,7 @@ a {
 content
 *******************************************************************************/
 .demo{
-    width:1080px;
+    width:1200px;
     margin:0 auto;
 }
 .demo-title{
@@ -64,6 +64,7 @@ content
     width:260px;
     height:200px;
     border: 4px solid #eee;
+    margin-bottom:40px;
 }
 .li__a{
     width:260px;
@@ -84,7 +85,8 @@ content
     text-align: center;
     padding:20px;
     color: #586069;
-    font-size:12px;
+    font-size:14px;
+    line-height:24px;
 }
 .demo__a{
     color: #0366d6
