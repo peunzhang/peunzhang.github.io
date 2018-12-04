@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>css三角生成工具</title>
+<link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+<div class="wrap">
+	<div class="form">
+		<div class="form-title">
+			<h1>rba和16进制互相转换</h1>
+		</div>
+		<div class="form-main">
+			<div class="form-line">
+				<label for="" class="label">请输入颜色值</label>
+				<div 
+					class="input bdrs" 
+					:class="{'show-clear': colorIsActive}"
+				>
+					<input 
+						type="text" 
+						class="text" 
+						placeholder="如rgb(255,255,255)或者#FFFFFF" 
+						v-model.trim="colorValue" 
+						@blur.prevent="blurColorFn"
+					>
+					<a href="javascript:" class="ico-clear" @click="clearColorValue()">清除</a>
+				</div>
+			</div>
+			<div class="form-btn">
+				<a href="javascript:;" class="btn btn-blue" @click="converValue()">转换</a>
+			</div>
+			<div class="form-line">
+				<label for="" class="label">点击颜色代码即可复制</label>
+				<div class="input bdrs">
+					<div 
+						class="text copy"
+						:data-clipboard-text="resultValue"
+						@click="copy()">{{resultValue}}
+					</div>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+	
+
+	<transition name="fade">
+		<div class="tips" v-if="isShowTips">{{isShowTipsText}}</div>
+	</transition>
+</div>
+<p class="copyright">
+    Copyright 2018 | by：<a href="https://www.cnblogs.com/PeunZhang/" target="_blank">白树</a> | 返回首页 <a href="https://peunzhang.github.io" target="_blank">peunzhang.github.io</a>
+</p>
+<script type="text/javascript" src="../js/clipboard.min-1.5.16.js"></script>
+<script src="../js/vue-2.5.17.js"></script>
+<script type="module" src="js/index.js" ></script>
+
+
+<script type="text/javascript" src="http://tajs.qq.com/stats?sId=45588381" charset="UTF-8"></script>
+</body>
+</html>
+
