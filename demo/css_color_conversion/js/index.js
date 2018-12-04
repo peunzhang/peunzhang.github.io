@@ -47,7 +47,7 @@ var app = new Vue({
 			clipboardText.on('success', function(e) {
 			    tips(that,'☺ 复制成功')
 			});
-			clipboardText.on('logor', function(e) {
+			clipboardText.on('error', function(e) {
 			    tips(that,'浏览器不支持复制')
 			});
 		}

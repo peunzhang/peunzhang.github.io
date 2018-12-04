@@ -92,7 +92,7 @@ $(function(){
     clipboardText.on('success', function(e) {
         log("☺ 复制成功");
     });
-    clipboardText.on('logor', function(e) {
+    clipboardText.on('error', function(e) {
         log("浏览器不支持复制");
     });
 	//生成
