@@ -2,14 +2,14 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>css三角生成工具</title>
+<title>rba和hex单位互转</title>
 <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
 <div class="wrap">
 	<div class="form">
 		<div class="form-title">
-			<h1>rba和16进制单位互转</h1>
+			<h1>rba和hex单位互转</h1>
 		</div>
 		<div class="form-main">
 			<div class="form-line">
@@ -20,8 +20,8 @@
 				>
 					<input 
 						type="text" 
-						class="text" 
-						placeholder="如rgb(255,255,255)或者#FFFFFF" 
+						class="text"
+						placeholder="如rgb(255,255,255)或者#FFFFFF"
 						v-model.trim="colorValue" 
 						@blur.prevent="blurColorFn"
 					>

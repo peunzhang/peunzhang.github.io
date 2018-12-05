@@ -24,7 +24,7 @@ var app = new Vue({
 			let colorValue = that.colorValue;
 
 			//检查色值
-			if(matchColorValue(colorValue) === "is16"){
+			if(matchColorValue(colorValue) === "isHEX"){
 				that.resultValue = Hex2RGB(colorValue)
 				that.isShowCopyBtn = true
 			}

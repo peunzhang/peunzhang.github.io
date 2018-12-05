@@ -1,25 +1,30 @@
-//匹配颜色值并过滤无效颜色
+//匹配颜色值
 let matchColorValue = function(ColorValue){
-	let match16 = ColorValue.match(/(^#[0-9a-fA-F]{3}$)|(^#[0-9a-fA-F]{6}$)|(^(red|blue|yellow|orange|purple|green|black|white|gray|pink|brown)$)/g);
+	let match16 = ColorValue.match(/(^#[0-9a-fA-F]{3}$)|(^#[0-9a-fA-F]{6}$)/g);
 	let matchRGB = ColorValue.match(/^[rR][gG][bB][\(](\s*(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\s*,){2}\s*(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\s*[\)]$/g);
 	// let matchRGBA = ColorValue.match(/^[rR][gG][bB][aA][\(](\s*(\d|[1-9]\d|1\d\d|2[0-4]\d|25[0-5])\s*,){3}\s*((0?\.[1-9]{1,2})|[01])\s*[\)]$/g);
 	if (match16) { 
-		return 'is16'
+		return 'isHEX'
     }
     else if(matchRGB){
 		return 'isRGB'
     }
 }
-//rgb转16进制
-let RGB2Hex = function(RGB) {
-	let rgb = RGB.split(',');
-	let r = parseInt(rgb[0].split('(')[1]);
-	let g = parseInt(rgb[1]);
-	let b = parseInt(rgb[2].split(')')[0]);
-	let hex = "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
-	return hex;
+//rgb转hex
+let RGB2Hex = function(rgb) {
+    let color = rgb.replace(/(?:\(|\)|rgb|RGB)*/g, "").split(",");
+    let strHex = "#";
+    for (let i=0; i<color.length; i++) {
+        let hex = Number(color[i]).toString(16);
+        if (hex.length < 2) {
+            hex = '0' + hex;
+        }
+        strHex += hex;
+    }
+    return strHex;
 }
-//16进制转rgb
+
+//hex转rgb
 let Hex2RGB = function(hex){
     let color = hex.toLowerCase();
 	// 处理三位的颜色值
