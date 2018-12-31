@@ -1,14 +1,15 @@
-import {matchColorValue,RGB2Hex,Hex2RGB,tips} from './lib/fn.js'
+import {matchColorValue,RGB2Hex,Hex2RGB,Hex2RGBA,tips} from './lib/fn.js'
 
 
 var app = new Vue({
 	el: '.wrap',
 	data: {
-		colorValue: 'rgb(255,13,1)',
-		colorIsActive: true,
-		resultValue: '#ff0d01',
+		colorValue: '',
+		colorIsActive: false,
+		resultValue: '',
+		resultValue2: '',
 		isShowTips : false,
-		isShowCopyBtn : false,
+        isShowRGBA : false
 	},
 	methods: {
 		blurColorFn: function() {
@@ -25,15 +26,21 @@ var app = new Vue({
 
 			//检查色值
 			if(matchColorValue(colorValue) === "isHEX"){
-				that.resultValue = Hex2RGB(colorValue)
-				that.isShowCopyBtn = true
+				that.resultValue = Hex2RGB(colorValue);
+				that.isShowRGBA = true;
+                that.resultValue2 = Hex2RGBA(colorValue);
 			}
 			else if(matchColorValue(colorValue) === "isRGB"){
 				that.resultValue = RGB2Hex(colorValue)
-				that.isShowCopyBtn = true
+                that.isShowRGBA = false;
 			}
+            else if(matchColorValue(colorValue) === "isRGBA"){
+                tips(that,'RGBA不能转换为HEX');
+                that.isShowRGBA = false;
+            }
 			else{
 				tips(that,'您输入的颜色值有误')
+                that.isShowRGBA = false;
 			}
 		},
 		copy : function(){

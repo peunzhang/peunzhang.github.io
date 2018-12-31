@@ -2,18 +2,17 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-<title>rba和hex单位互转</title>
+<title>RGB和HEX单位互转</title>
 <link rel="stylesheet" href="css/index.css">
 </head>
 <body>
 <div class="wrap">
 	<div class="form">
 		<div class="form-title">
-			<h1>rba和hex单位互转</h1>
+			<h1>RGB和HEX单位互转</h1>
 		</div>
 		<div class="form-main">
 			<div class="form-line">
-				<label for="" class="label">请输入颜色值</label>
 				<div 
 					class="input bdrs" 
 					:class="{'show-clear': colorIsActive}"
@@ -21,7 +20,7 @@
 					<input 
 						type="text" 
 						class="text"
-						placeholder="如rgb(255,255,255)或者#FFFFFF"
+						placeholder="请输入颜色值，如rgb(255,255,255)或#FFFFFF"
 						v-model.trim="colorValue" 
 						@blur.prevent="blurColorFn"
 					>
@@ -29,17 +28,23 @@
 				</div>
 			</div>
 			<div class="form-btn">
-				<a href="javascript:;" class="btn btn-blue" @click="converValue()">转换</a>
+				<a href="javascript:;" class="btn btn-blue" @click="converValue()">转换 -></a>
 			</div>
 			<div class="form-line">
-				<label for="" class="label">点击颜色代码即可复制</label>
 				<div class="input bdrs">
-					<div 
+					<div
 						class="text copy"
 						:data-clipboard-text="resultValue"
 						@click="copy()">{{resultValue}}
 					</div>
 				</div>
+                <div class="input bdrs" v-if="isShowRGBA">
+                    <div
+                            class="text copy"
+                            :data-clipboard-text="resultValue2"
+                            @click="copy()">{{resultValue2}}
+                    </div>
+                </div>
 			</div>
 		</div>
 		
