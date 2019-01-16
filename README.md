@@ -14,5 +14,5 @@
 - 博客园：http://peunzhang.cnblogs.com/
 - github：https://github.com/peunzhang
 
-### 白树自研工具集，很多人都在用
+### 白树设计的前端工具，很实用
 https://peunzhang.github.io/index.html
