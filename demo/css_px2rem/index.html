@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+<title>css单位转化</title>
+<link rel="stylesheet" href="css/index.css">
+</head>
+<body>
+<div class="wrap">
+	<div class="form">
+		<div class="form-title">
+			<h1>css单位转化px2rem</h1>
+		</div>
+		<div class="form-main">
+			<div class="form-line">
+				<div 
+					class="input bdrs" 
+					:class="{'show-clear': isActive}"
+				>
+					<textarea
+						type="text"
+						class="text"
+						placeholder="请把代码粘贴到这里"
+						v-model.trim="textValue"
+						@blur.prevent="blurFn"
+					></textarea>
+					<a href="javascript:" class="ico-clear" @click="clearValue()">清除</a>
+				</div>
+			</div>
+			<div class="form-btn">
+				<div class="form-btn-unit">
+					<div class="unit-line">1rem</div>
+					<div class="unit-eq">=</div>
+					<div class="unit-input">
+						<input v-model.trim="unitValue" type="tel">
+					</div>
+					<div class="unit-line">px</div>
+				</div>
+				<div class="form-btn-unit">
+					<label for="handlecheckbox">
+						<input type="checkbox" v-model="unHandleCheckbox" id="handlecheckbox">
+						不处理border
+					</label>
+				</div>
+				<a href="javascript:;" class="btn btn-blue" @click="converValue()">转换 -></a>
+			</div>
+			<div class="form-line">
+				<div class="input bdrs">
+					<textarea
+						class="text copy"
+						:data-clipboard-text="resultValue"
+						@click="copy()">{{resultValue}}
+					</textarea>
+				</div>
+			</div>
+		</div>
+		
+	</div>
+	
+
+	<transition name="fade">
+		<div class="tips" v-if="isShowTips">{{isShowTipsText}}</div>
+	</transition>
+</div>
+<p class="copyright">
+    Copyright 2019 | by：<a href="https://www.cnblogs.com/PeunZhang/" target="_blank">白树</a> | 返回首页 <a href="https://peunzhang.github.io" target="_blank">peunzhang.github.io</a>
+</p>
+<script type="text/javascript" src="../js/clipboard.min-1.5.16.js"></script>
+<script src="../js/vue-2.5.17.js"></script>
+<script type="module" src="js/index.js" ></script>
+
+
+<script type="text/javascript" src="http://tajs.qq.com/stats?sId=45588381" charset="UTF-8"></script>
+</body>
+</html>
+
