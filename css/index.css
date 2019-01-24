@@ -48,7 +48,7 @@ a {
 content
 *******************************************************************************/
 .demo{
-    width:1200px;
+    width:1232px;
     margin:0 auto;
 }
 .demo-title{
@@ -58,13 +58,14 @@ content
 .demo__ul{
     display: flex;
     flex-wrap: wrap;
-    justify-content:space-between;
+
 }
 .demo__li{
     width:260px;
     height:200px;
     border: 4px solid #eee;
     margin-bottom:40px;
+    margin-right:40px;
 }
 .li__a{
     width:260px;
