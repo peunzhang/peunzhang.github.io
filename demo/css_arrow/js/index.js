@@ -16,7 +16,7 @@ $(function(){
 		$(document).find("#temporaryStyle").remove();
 		figureUi.children().remove();
 		figure.addClass("hidden");
-		figureStyle.children().addClass("hide");
+		figureStyle.children().remove();
 	}
 	//操作提示
 	let log = function(text){
@@ -49,11 +49,13 @@ $(function(){
 		arrowSize = $("#arrowSize").val();
 		arrowWidth = $("#arrowWidth").val();
 		arrowColor = $("#arrowColor").val();
+		console.info(arrowSize,arrowWidth,arrowColor)
 		if(matchWidthValue(arrowSize) == false) return
 		else if(matchWidthValue(arrowWidth) == false) return
 		else if(matchColorValue(arrowColor) == false) return
 		
 		let figureBaseStyle = `display:inline-block;border-style:solid;width:${arrowSize};height:${arrowSize};border-width:${arrowWidth} ${arrowWidth} 0 0;border-color:${arrowColor};`
+        console.info(figureBaseStyle)
 		let figureExtendStyle = {
 	        top : `transform: matrix(0.71,-0.71,0.71,0.71,0,0)`,
 	        right : `transform: matrix(0.71,0.71,-0.71,0.71,0,0)`,

@@ -15,7 +15,7 @@ $(function(){
 		$(document).find("#temporaryStyle").remove();
 		angleUi.children().remove();
 		angle.addClass("hidden");
-		angleStyle.children().addClass("hide");
+		angleStyle.children().remove();
 	}
 	//操作提示
 	let log = function(text){
