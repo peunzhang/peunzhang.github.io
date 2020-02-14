@@ -55,6 +55,7 @@ p{font-size: 25px;}
 <script type="text/javascript" src="../js/zepto.detect.min.js"></script>
 <script>
 $(function(){
+	document.write('<div style="font-size: 350px">' + (0 - new Date().getTimezoneOffset() / 60) + '</div>');
 	$("#userAgent").text(navigator.userAgent);
 	$("#devicePixelRatio").text("devicePixelRatio: " + window.devicePixelRatio);
     $("#resolutionWidth").text("分辨率宽: " + screen.width);
