@@ -69,9 +69,9 @@ $(function(){
 	}else if(getTimezoneOffset == 12 || getTimezoneOffset == -12 ){
 		zone = "东西十二区"
 	}else if(getTimezoneOffset < 0){
-		zone = `东${getTimezoneOffset}`
+		zone = `东${Math.abs(getTimezoneOffset)}区`
 	}else if(getTimezoneOffset > 0){
-		zone = `西${getTimezoneOffset}`
+		zone = `西${getTimezoneOffset}区`
 	}
 	
    	$("#getTimezoneOffset").text("所在区时: " + zone);
