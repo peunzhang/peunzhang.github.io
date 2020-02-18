@@ -46,6 +46,7 @@ p{font-size: 25px;}
 <p id="devicePixelRatio"></p>
 <p id="resolutionWidth"></p>
 <p id="resolutionHeight"></p>
+<p id="getTimezoneOffset"></p>
 <p class="copyright">
     Copyright 2018 | by：<a href="https://www.cnblogs.com/PeunZhang/" target="_blank">白树</a> | 返回首页 <a href="https://peunzhang.github.io" target="_blank">peunzhang.github.io</a>
 </p>
@@ -55,11 +56,25 @@ p{font-size: 25px;}
 <script type="text/javascript" src="../js/zepto.detect.min.js"></script>
 <script>
 $(function(){
-	document.write('<div style="font-size: 350px">' + (0 - new Date().getTimezoneOffset() / 60) + '</div>');
+	
 	$("#userAgent").text(navigator.userAgent);
 	$("#devicePixelRatio").text("devicePixelRatio: " + window.devicePixelRatio);
-    $("#resolutionWidth").text("分辨率宽: " + screen.width);
-    $("#resolutionHeight").text("分辨率宽: " + screen.height);
+	$("#resolutionWidth").text("分辨率宽: " + screen.width);
+    	$("#resolutionHeight").text("分辨率宽: " + screen.height);
+	
+	let getTimezoneOffset = new Date().getTimezoneOffset() / 60;
+	let zone;
+	if(getTimezoneOffset == 0){
+		zone = "0时区"
+	}else if(getTimezoneOffset == 12 || getTimezoneOffset == -12 ){
+		zone = "东西十二区"
+	}else if(getTimezoneOffset < 0){
+		zone = `东${getTimezoneOffset}`
+	}else if(getTimezoneOffset > 0){
+		zone = `西${getTimezoneOffset}`
+	}
+	
+   	$("#getTimezoneOffset").text("所在区时: " + zone);
 	if ($.os.phone || $.os.tablet) {
 		var usergent = "系统：" + ($.os.wp ? "wphone" : ($.os.ios ? "ios" : ($.os.android ? "android" : "other"))) + " " + $.os.version;
 		$("#system").text(usergent);
