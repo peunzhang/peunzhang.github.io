@@ -363,6 +363,89 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
   font-size:18px;letter-spacing:1px;
 }
 
+/* ===== 家长奖励面板（5 连击奖杯触发） ===== */
+.parent{
+  position:fixed;inset:0;z-index:80;display:none;
+  align-items:center;justify-content:center;padding:18px;
+  background:rgba(11,10,31,.88);backdrop-filter:blur(14px);
+}
+.parent.show{display:flex;}
+.parent .card{
+  width:100%;max-width:380px;
+  background:linear-gradient(160deg,#1E1B4B 0%,#312E81 60%,#3B0764 100%);
+  border:1px solid rgba(250,204,21,.35);
+  border-radius:22px;padding:22px 20px 18px;
+  box-shadow:0 30px 70px rgba(0,0,0,.65);
+  position:relative;
+}
+.parent .close{
+  position:absolute;top:10px;right:12px;width:32px;height:32px;font-size:20px;color:var(--c-text-dim);
+}
+.parent h3{
+  font-size:18px;display:flex;align-items:center;gap:8px;margin-bottom:6px;
+}
+.parent .desc{
+  font-size:12px;color:var(--c-text-dim);line-height:1.5;margin-bottom:14px;
+}
+.parent-row{
+  display:grid;
+  grid-template-columns:34px 50px 1fr;
+  align-items:center;gap:8px;
+  padding:10px 4px;border-bottom:1px dashed var(--c-card-line);
+}
+.parent-row:last-of-type{border-bottom:0;}
+.parent-row .emoji{font-size:22px;text-align:center;}
+.parent-row .lbl{
+  font-weight:800;font-size:14px;letter-spacing:1px;
+  display:flex;flex-direction:column;line-height:1.1;
+}
+.parent-row .lbl em{
+  font-style:normal;font-size:10px;color:var(--c-text-dim);font-weight:500;letter-spacing:0;margin-top:2px;
+}
+.parent-row .ctrl{
+  display:flex;align-items:center;justify-content:flex-end;gap:6px;
+}
+.parent-row .step{
+  width:30px;height:30px;border-radius:8px;
+  background:rgba(255,255,255,.10);border:1px solid var(--c-card-line);
+  font-size:18px;font-weight:900;line-height:28px;
+}
+.parent-row .step:active{background:rgba(255,255,255,.22);}
+.parent-row .cnt{
+  min-width:36px;text-align:center;font-size:18px;font-weight:900;
+  font-variant-numeric:tabular-nums;letter-spacing:1px;
+  color:#FACC15;
+}
+.parent-row .quick{
+  height:28px;padding:0 8px;border-radius:8px;
+  background:linear-gradient(135deg,#22C55E,#10B981);
+  font-size:12px;font-weight:800;color:#fff;
+  margin-left:2px;
+}
+.parent-row .quick:active{filter:brightness(1.15);}
+.parent-row .quick.warm{ background:linear-gradient(135deg,#F59E0B,#F43F5E); }
+.parent-actions{
+  margin-top:14px;display:flex;gap:8px;
+}
+.parent-actions button{
+  flex:1;padding:11px;border-radius:12px;font-weight:800;font-size:14px;
+}
+.parent-actions .reset-all{
+  background:rgba(244,63,94,.18);color:#FCA5A5;border:1px solid rgba(244,63,94,.4);
+}
+.parent-actions .done{
+  background:linear-gradient(135deg,var(--c-accent),var(--c-blue));color:#fff;
+}
+.parent-flash{
+  position:absolute;left:0;right:0;top:-22px;text-align:center;
+  font-size:13px;color:#FACC15;font-weight:700;
+  opacity:0;transition:opacity .25s ease;
+  text-shadow:0 2px 6px rgba(0,0,0,.6);
+}
+.parent-flash.show{opacity:1;}
+/* 让奖杯卡片在被快速点击时不要文字反白成"选中"状态 */
+.record{ -webkit-user-select:none; user-select:none; }
+
 /* ===== 权限提示 ===== */
 .perm{
   position:fixed;inset:0;z-index:70;display:none;
@@ -505,6 +588,62 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     <div class="toggle" id="demoToggle"></div>
   </div>
   <button class="danger" id="resetBtn">🗑 重置最高纪录</button>
+</div>
+
+<!-- 家长奖励面板（连点 5 下左上角奖杯触发） -->
+<div class="parent" id="parentModal">
+  <div class="card">
+    <div class="parent-flash" id="parentFlash">已保存</div>
+    <button class="close" id="closeParent">✕</button>
+    <h3>🎁 家长奖励</h3>
+    <p class="desc">娃做完家务可以加额度。<br>奖励永久累积，跨天不会清零，但每天会保证 ≥ 基础额度。</p>
+
+    <div class="parent-row" data-x="50">
+      <span class="emoji">🚀</span>
+      <span class="lbl">50×<em>基础每天 10</em></span>
+      <span class="ctrl">
+        <button class="step" data-act="dec">−</button>
+        <span class="cnt">0</span>
+        <button class="step" data-act="inc">+</button>
+        <button class="quick" data-add="3">+3</button>
+      </span>
+    </div>
+    <div class="parent-row" data-x="100">
+      <span class="emoji">🛸</span>
+      <span class="lbl">100×<em>基础每天 8</em></span>
+      <span class="ctrl">
+        <button class="step" data-act="dec">−</button>
+        <span class="cnt">0</span>
+        <button class="step" data-act="inc">+</button>
+        <button class="quick" data-add="2">+2</button>
+      </span>
+    </div>
+    <div class="parent-row" data-x="500">
+      <span class="emoji">⚡</span>
+      <span class="lbl">500×<em>基础每天 4</em></span>
+      <span class="ctrl">
+        <button class="step" data-act="dec">−</button>
+        <span class="cnt">0</span>
+        <button class="step" data-act="inc">+</button>
+        <button class="quick warm" data-add="1">+1</button>
+      </span>
+    </div>
+    <div class="parent-row" data-x="999">
+      <span class="emoji">🌌</span>
+      <span class="lbl">999×<em>基础每天 2</em></span>
+      <span class="ctrl">
+        <button class="step" data-act="dec">−</button>
+        <span class="cnt">0</span>
+        <button class="step" data-act="inc">+</button>
+        <button class="quick warm" data-add="1">+1</button>
+      </span>
+    </div>
+
+    <div class="parent-actions">
+      <button class="reset-all" id="parentResetAll">恢复基础额度</button>
+      <button class="done" id="parentDone">完成 ✓</button>
+    </div>
+  </div>
 </div>
 
 <!-- 权限引导（首次进入或被拒后再次点 GO） -->
@@ -731,6 +870,108 @@ function showToast(text, kind, dur){
   toastTimer = setTimeout(function(){ t.classList.remove('show'); }, dur || 1600);
 }
 
+/* ---------- 家长奖励面板（连点 5 下奖杯触发） ----------
+   规则（与 ensureUsage 配合）：
+   - 永久累积：奖励数字保留到下一天，不会被零点清零
+   - 跨天保底：每天醒来保证 counts[x] >= DAILY_QUOTA[x]
+*/
+var parentModal = $('parentModal'),
+    closeParentBtn = $('closeParent'),
+    parentDoneBtn = $('parentDone'),
+    parentResetAllBtn = $('parentResetAll'),
+    parentFlash = $('parentFlash'),
+    recordCard = document.querySelector('.record');
+
+var trophyTaps = 0, trophyTapTimer = null;
+var TROPHY_TARGET = 5, TROPHY_RESET_MS = 1500;
+
+if (recordCard){
+  recordCard.addEventListener('click', function(){
+    trophyTaps++;
+    clearTimeout(trophyTapTimer);
+    if (trophyTaps >= TROPHY_TARGET){
+      trophyTaps = 0;
+      openParent();
+    } else {
+      trophyTapTimer = setTimeout(function(){ trophyTaps = 0; }, TROPHY_RESET_MS);
+    }
+  });
+}
+
+function openParent(){
+  ensureUsage();
+  refreshParentPanel();
+  parentModal.classList.add('show');
+  haptic([20,30,20,30,60]); // 给家长一个独有的"已进入"反馈
+}
+function closeParentFn(){
+  parentModal.classList.remove('show');
+}
+function refreshParentPanel(){
+  document.querySelectorAll('#parentModal .parent-row').forEach(function(row){
+    var x = +row.dataset.x;
+    var rem = state.usage.counts[x] || 0;
+    row.querySelector('.cnt').textContent = rem;
+  });
+}
+function flashSaved(text){
+  parentFlash.textContent = text || '已保存';
+  parentFlash.classList.add('show');
+  clearTimeout(flashSaved._t);
+  flashSaved._t = setTimeout(function(){ parentFlash.classList.remove('show'); }, 900);
+}
+function adjustQuota(x, delta){
+  ensureUsage();
+  var cur = state.usage.counts[x] || 0;
+  var next = Math.max(0, cur + delta);
+  if (next === cur) return;
+  state.usage.counts[x] = next;
+  save();
+  refreshParentPanel();
+  updateBadges();
+  // 如果当前选中的就是这个倍率，且额度刚从 0 涨上来，刷新选中按钮的 exhausted 状态
+  // updateBadges 已经处理了，这里无需额外动作
+  haptic(15);
+  flashSaved(delta > 0 ? '+'+delta : ''+delta);
+}
+
+closeParentBtn.addEventListener('click', closeParentFn);
+parentDoneBtn.addEventListener('click', closeParentFn);
+parentModal.addEventListener('click', function(e){
+  if (e.target === parentModal) closeParentFn(); // 点黑色遮罩关闭
+});
+
+// +/- 单步
+document.querySelectorAll('#parentModal .step').forEach(function(b){
+  b.addEventListener('click', function(){
+    var row = b.closest('.parent-row');
+    var x = +row.dataset.x;
+    adjustQuota(x, b.dataset.act === 'inc' ? +1 : -1);
+  });
+});
+// 快捷加（+3 / +2 / +1）
+document.querySelectorAll('#parentModal .quick').forEach(function(b){
+  b.addEventListener('click', function(){
+    var row = b.closest('.parent-row');
+    var x = +row.dataset.x;
+    var add = +b.dataset.add || 1;
+    adjustQuota(x, add);
+  });
+});
+// 恢复到基础额度（不是清零，是补到 DAILY_QUOTA）
+parentResetAllBtn.addEventListener('click', function(){
+  if (!confirm('把所有受限档位重置为基础额度？已奖励的额度会被覆盖。')) return;
+  ensureUsage();
+  Object.keys(DAILY_QUOTA).forEach(function(k){
+    state.usage.counts[k] = DAILY_QUOTA[k];
+  });
+  save();
+  refreshParentPanel();
+  updateBadges();
+  flashSaved('已恢复');
+  haptic([30,30,30]);
+});
+
 /* ---------- 庆祝动画 ---------- */
 var celebrating = false;
 function celebrate(){
@@ -773,16 +1014,29 @@ function todayStr(){
   return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
 }
 function ensureUsage(){
-  if (!state.usage || state.usage.date !== todayStr()){
+  // 首次：给每个档位发齐基础额度
+  if (!state.usage || !state.usage.counts){
     state.usage = { date: todayStr(), counts: {} };
     Object.keys(DAILY_QUOTA).forEach(function(k){ state.usage.counts[k] = DAILY_QUOTA[k]; });
     save();
-  } else {
-    // 防御：如果 HTML 改了额度，对没记录过的档位补默认
-    Object.keys(DAILY_QUOTA).forEach(function(k){
-      if (state.usage.counts[k] == null) state.usage.counts[k] = DAILY_QUOTA[k];
-    });
+    return;
   }
+  // 跨天：永久累积规则——保留当前剩余，但保证 ≥ 默认基础额度
+  // 例：家长奖励了一堆没用完 (counts=12) → 跨天还是 12
+  //     昨天用完了 (counts=0) → 跨天补到默认 (2)
+  if (state.usage.date !== todayStr()){
+    Object.keys(DAILY_QUOTA).forEach(function(k){
+      var cur = state.usage.counts[k] || 0;
+      state.usage.counts[k] = Math.max(cur, DAILY_QUOTA[k]);
+    });
+    state.usage.date = todayStr();
+    save();
+    return;
+  }
+  // 同一天：防御性补全（HTML 新增了档位的情况）
+  Object.keys(DAILY_QUOTA).forEach(function(k){
+    if (state.usage.counts[k] == null) state.usage.counts[k] = DAILY_QUOTA[k];
+  });
 }
 function remaining(x){
   ensureUsage();
