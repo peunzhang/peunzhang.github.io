@@ -164,7 +164,11 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
   font-variant-numeric:tabular-nums;
   letter-spacing:-2px;
   text-shadow:0 6px 18px rgba(0,0,0,.45);
+  transition:font-size .2s ease;
 }
+.dial-center .num.lvl-1{ font-size:clamp(56px,14vw,86px); letter-spacing:-1.5px; }
+.dial-center .num.lvl-2{ font-size:clamp(44px,11vw,68px); letter-spacing:-1px; }
+.dial-center .num.lvl-3{ font-size:clamp(34px,8.5vw,52px); letter-spacing:-.5px; }
 .dial-center .unit{
   margin-top:4px;font-size:14px;font-weight:700;color:var(--c-text-dim);
   letter-spacing:2px;
@@ -200,6 +204,19 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
   border-color:transparent;
   box-shadow:0 8px 22px rgba(124,58,237,.45);
   transform:translateY(-2px);
+}
+.multi button.active.hot{
+  background:linear-gradient(135deg,#F97316,#F43F5E);
+  box-shadow:0 8px 22px rgba(244,63,94,.55);
+}
+.multi button.active.insane{
+  background:linear-gradient(135deg,#FACC15,#F43F5E 60%,#7C3AED);
+  box-shadow:0 10px 26px rgba(244,63,94,.6);
+  animation:insanePulse 1.4s ease-in-out infinite;
+}
+@keyframes insanePulse{
+  0%,100%{ filter:brightness(1) saturate(1.1); }
+  50%   { filter:brightness(1.2) saturate(1.4); }
 }
 .multi button:active{transform:scale(.94);}
 
@@ -384,12 +401,16 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     <div>倍率 <b id="multiLabel">1×</b></div>
   </div>
 
-  <!-- 倍率切换 -->
+  <!-- 倍率切换：从慢到夸张，越往后越疯 -->
   <div class="multi" id="multi">
     <button data-x="1" class="active"><span class="e">🐢</span><span>1×</span></button>
     <button data-x="2"><span class="e">🚲</span><span>2×</span></button>
-    <button data-x="4"><span class="e">🏎️</span><span>4×</span></button>
-    <button data-x="8"><span class="e">🚀</span><span>8×</span></button>
+    <button data-x="5"><span class="e">🏎️</span><span>5×</span></button>
+    <button data-x="10"><span class="e">✈️</span><span>10×</span></button>
+    <button data-x="50" data-tier="hot"><span class="e">🚀</span><span>50×</span></button>
+    <button data-x="100" data-tier="hot"><span class="e">🛸</span><span>100×</span></button>
+    <button data-x="500" data-tier="insane"><span class="e">⚡</span><span>500×</span></button>
+    <button data-x="999" data-tier="insane"><span class="e">🌌</span><span>999×</span></button>
   </div>
 
   <!-- GO 按钮 -->
@@ -439,17 +460,6 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     </div>
     <div class="toggle" id="demoToggle"></div>
   </div>
-  <div class="row">
-    <div>
-      <div>速度上限保护</div>
-      <div class="desc">放大后超过此值视为 GPS 抖动，丢弃</div>
-    </div>
-    <div class="seg" id="maxSeg">
-      <button data-m="200">200</button>
-      <button data-m="400" class="active">400</button>
-      <button data-m="800">800</button>
-    </div>
-  </div>
   <button class="danger" id="resetBtn">🗑 重置最高纪录</button>
 </div>
 
@@ -477,7 +487,7 @@ var DIAL_MAX_MPH = 120;          // 切到 mph 时
 var ARC_LEN = 565.486;           // 270° * 2π * R(120) / 360 ≈ 565.49
 var STORE_KEY = 'aniu-speed.v1';
 var DEFAULTS = {
-  multiplier:1, unit:'kmh', sound:true, vib:true, demo:false, maxKmh:400, topKmh:0
+  multiplier:1, unit:'kmh', sound:true, vib:true, demo:false, topKmh:0
 };
 
 /* ---------- 持久化 ---------- */
@@ -614,16 +624,21 @@ var needleTargetAng = -135, needleCurrentAng = -135;
 })();
 
 function render(rawKmh){
-  // 限幅保护：放大后超过设定值视为 GPS 抖动，沿用上一帧显示值
+  // 没有人为上限：实际速度 × 倍率，原汁原味地显示
+  if (!isFinite(rawKmh) || rawKmh < 0) rawKmh = 0;
   var boosted = rawKmh * state.multiplier;
-  if (boosted > state.maxKmh) boosted = currentDispKmh;
   lastRealKmh = rawKmh;
   currentDispKmh = boosted;
 
   var dispNum = toDisplay(boosted);
   var dispReal = toDisplay(rawKmh);
 
-  speedNum.textContent = Math.round(dispNum);
+  // 数字越大字号越小，避免溢出
+  var n = Math.round(dispNum);
+  speedNum.textContent = n;
+  speedNum.classList.toggle('lvl-1', n >= 1000  && n < 10000);
+  speedNum.classList.toggle('lvl-2', n >= 10000 && n < 100000);
+  speedNum.classList.toggle('lvl-3', n >= 100000);
   realSpeed.textContent = dispReal.toFixed(1);
 
   // 表盘进度 (0~1)
@@ -685,10 +700,22 @@ function celebrate(){
 var multiBtns = document.querySelectorAll('#multi button');
 function selectMultiplier(x, silent){
   state.multiplier = x;
-  multiBtns.forEach(function(b){ b.classList.toggle('active', +b.dataset.x === x); });
+  var tier = '';
+  multiBtns.forEach(function(b){
+    var on = (+b.dataset.x === x);
+    b.classList.toggle('active', on);
+    b.classList.toggle('hot',    on && b.dataset.tier === 'hot');
+    b.classList.toggle('insane', on && b.dataset.tier === 'insane');
+    if (on) tier = b.dataset.tier || '';
+  });
   multiLabel.textContent = x + '×';
   save();
-  if (!silent){ haptic(20); beep('tick'); }
+  if (!silent){
+    // 越夸张的档位反馈越猛
+    if (tier === 'insane'){ haptic([30,40,30,40,80]); beep('win'); }
+    else if (tier === 'hot'){ haptic([20,30,60]); beep('go'); }
+    else { haptic(20); beep('tick'); }
+  }
   render(lastRealKmh);
 }
 multiBtns.forEach(function(b){
@@ -888,15 +915,6 @@ document.querySelectorAll('#unitSeg button').forEach(function(b){
     haptic(20);
   });
 });
-/* 速度上限 */
-document.querySelectorAll('#maxSeg button').forEach(function(b){
-  b.addEventListener('click', function(){
-    state.maxKmh = +b.dataset.m;
-    save();
-    document.querySelectorAll('#maxSeg button').forEach(function(x){ x.classList.toggle('active', x===b); });
-    haptic(20);
-  });
-});
 /* 开关组 */
 function bindToggle(el, key){
   el.addEventListener('click', function(){
@@ -951,9 +969,9 @@ function updateToggles(){
   document.querySelectorAll('#unitSeg button').forEach(function(x){
     x.classList.toggle('active', x.dataset.u === state.unit);
   });
-  document.querySelectorAll('#maxSeg button').forEach(function(x){
-    x.classList.toggle('active', +x.dataset.m === state.maxKmh);
-  });
+  // 兼容老 localStorage：如果存了不在新档位列表里的倍率，回到 1×
+  var validX = Array.prototype.map.call(multiBtns, function(b){ return +b.dataset.x; });
+  if (validX.indexOf(state.multiplier) < 0) state.multiplier = 1;
   selectMultiplier(state.multiplier, true);
 }
 
