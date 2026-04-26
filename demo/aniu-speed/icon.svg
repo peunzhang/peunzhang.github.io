@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="60%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="dial" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="40%" stop-color="#FACC15"/>
+      <stop offset="75%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#F43F5E"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="512" height="512" rx="112" fill="url(#bg)"/>
+  <g transform="translate(256 290)">
+    <path d="M -160 0 A 160 160 0 1 1 160 0" fill="none" stroke="rgba(255,255,255,0.15)" stroke-width="40" stroke-linecap="round"/>
+    <path d="M -160 0 A 160 160 0 0 1 110 -116" fill="none" stroke="url(#dial)" stroke-width="40" stroke-linecap="round"/>
+    <g stroke="white" stroke-linecap="round">
+      <line x1="-160" y1="0" x2="-138" y2="0" stroke-width="6"/>
+      <line x1="-113" y1="-113" x2="-97" y2="-97" stroke-width="6"/>
+      <line x1="0" y1="-160" x2="0" y2="-138" stroke-width="6"/>
+      <line x1="113" y1="-113" x2="97" y2="-97" stroke-width="6"/>
+      <line x1="160" y1="0" x2="138" y2="0" stroke-width="6"/>
+    </g>
+    <line x1="0" y1="0" x2="80" y2="-115" stroke="white" stroke-width="14" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="22" fill="#1E1B4B" stroke="white" stroke-width="6"/>
+  </g>
+  <text x="256" y="118" text-anchor="middle" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="72" font-weight="900" fill="white">?[</text>
+</svg>

@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 150" width="260" height="150">
+  <defs>
+    <linearGradient id="bgR" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#7C3AED"/>
+      <stop offset="55%" stop-color="#3B82F6"/>
+      <stop offset="100%" stop-color="#1E1B4B"/>
+    </linearGradient>
+    <linearGradient id="dialR" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="50%" stop-color="#FACC15"/>
+      <stop offset="100%" stop-color="#F43F5E"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="260" height="150" fill="url(#bgR)"/>
+  <g transform="translate(75 115)">
+    <path d="M -60 0 A 60 60 0 0 1 60 0" fill="none" stroke="rgba(255,255,255,0.16)" stroke-width="14" stroke-linecap="round"/>
+    <path d="M -60 0 A 60 60 0 0 1 42 -42" fill="none" stroke="url(#dialR)" stroke-width="14" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="33" y2="-44" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="8" fill="#1E1B4B" stroke="white" stroke-width="3"/>
+  </g>
+  <g transform="translate(170 60)">
+    <text x="0" y="0" fill="white" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="46" font-weight="900" letter-spacing="-2">88</text>
+    <text x="78" y="-2" fill="rgba(255,255,255,0.7)" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="13" font-weight="700">km/h</text>
+  </g>
+  <g transform="translate(170 80)">
+    <circle cx="6" cy="6" r="6" fill="#22C55E"/>
+    <circle cx="6" cy="6" r="11" fill="none" stroke="#22C55E" stroke-width="1.5" opacity="0.5"/>
+    <text x="22" y="11" fill="white" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="14" font-weight="800" letter-spacing="2">GPS LIVE</text>
+  </g>
+  <text x="170" y="118" fill="rgba(255,255,255,0.55)" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="10" font-weight="600" letter-spacing="1">REAL  MODE</text>
+</svg>

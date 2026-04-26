@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=no,viewport-fit=cover">
+<meta name="theme-color" content="#1E1B4B">
+<meta name="description" content="阿牛的速度——把手机绑在单车上，骑得越快屏幕里的小赛车越快！">
+<meta name="format-detection" content="telephone=no,email=no">
+<!-- iOS 全屏 PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="阿牛的速度">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="icon" type="image/svg+xml" href="icon.svg">
+<link rel="manifest" href="manifest.webmanifest">
+<title>阿牛的速度</title>
+<style>
+:root{
+  --c-bg-1:#1E1B4B;
+  --c-bg-2:#312E81;
+  --c-bg-3:#4C1D95;
+  --c-accent:#7C3AED;
+  --c-yellow:#FACC15;
+  --c-red:#F43F5E;
+  --c-green:#22C55E;
+  --c-blue:#3B82F6;
+  --c-text:#F8FAFC;
+  --c-text-dim:rgba(248,250,252,.65);
+  --c-card:rgba(255,255,255,.08);
+  --c-card-line:rgba(255,255,255,.16);
+  --speed-progress:0; /* 0~1，由 JS 写入 */
+  --speed-glow:0;     /* 0~1，速度越快越亮 */
+  --safe-top:env(safe-area-inset-top,0px);
+  --safe-bottom:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;}
+body{
+  font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue","Helvetica Rounded","Hiragino Sans GB",sans-serif;
+  color:var(--c-text);
+  overflow:hidden;
+  background:#0B0A1F;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:manipulation;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
+
+/* ===== 背景：双层渐变，按速度切换暖色 ===== */
+.bg{
+  position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(120% 80% at 50% 0%,rgba(124,58,237,.55),transparent 60%),
+    linear-gradient(160deg,var(--c-bg-1),var(--c-bg-2) 45%,var(--c-bg-3));
+  transition:filter .6s ease;
+}
+.bg-hot{
+  position:fixed;inset:0;z-index:0;pointer-events:none;
+  background:
+    radial-gradient(120% 80% at 50% 0%,rgba(244,63,94,.55),transparent 60%),
+    linear-gradient(160deg,#7F1D1D,#9A3412 50%,#B45309);
+  opacity:calc(var(--speed-glow)*.85);
+  transition:opacity .8s ease;
+}
+
+/* ===== Speed Lines 加速线 ===== */
+.lines{
+  position:fixed;inset:0;z-index:1;pointer-events:none;overflow:hidden;
+  opacity:calc(var(--speed-glow)*.9);
+  transition:opacity .4s ease;
+}
+.lines i{
+  position:absolute;width:2px;height:100px;border-radius:2px;
+  background:linear-gradient(180deg,transparent,rgba(255,255,255,.85),transparent);
+  animation:streak linear infinite;
+}
+@keyframes streak{
+  0%{transform:translateY(-110%);}
+  100%{transform:translateY(110vh);}
+}
+
+/* ===== 主容器 ===== */
+.app{
+  position:relative;z-index:2;
+  height:100%;
+  padding:calc(var(--safe-top) + 12px) 18px calc(var(--safe-bottom) + 14px);
+  display:flex;flex-direction:column;gap:10px;
+}
+
+/* ===== 顶栏 ===== */
+.top{
+  display:flex;align-items:center;justify-content:space-between;
+}
+.record{
+  display:flex;align-items:center;gap:8px;
+  padding:8px 14px;border-radius:999px;
+  background:var(--c-card);border:1px solid var(--c-card-line);
+  font-size:14px;font-weight:600;
+}
+.record .trophy{font-size:18px;}
+.record .num{font-variant-numeric:tabular-nums;letter-spacing:.5px;}
+.icon-btn{
+  width:42px;height:42px;border-radius:50%;
+  background:var(--c-card);border:1px solid var(--c-card-line);
+  display:flex;align-items:center;justify-content:center;font-size:20px;
+}
+.icon-row{display:flex;gap:8px;}
+
+/* ===== 吉祥物 ===== */
+.mascot{
+  text-align:center;font-size:60px;line-height:1;
+  margin-top:6px;
+  filter:drop-shadow(0 6px 14px rgba(0,0,0,.35));
+  transition:transform .3s ease;
+}
+.mascot.bounce{animation:bounce 1.4s ease-in-out infinite;}
+@keyframes bounce{
+  0%,100%{transform:translateY(0) rotate(-2deg);}
+  50%{transform:translateY(-10px) rotate(2deg);}
+}
+
+/* ===== 表盘 ===== */
+.dial-wrap{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.dial{
+  width:min(86vw,360px);
+  aspect-ratio:1/1;
+  filter:drop-shadow(0 18px 40px rgba(0,0,0,.45));
+}
+.dial .track{
+  fill:none;stroke:rgba(255,255,255,.10);stroke-width:14;stroke-linecap:round;
+}
+.dial .progress{
+  fill:none;stroke-width:14;stroke-linecap:round;
+  stroke:url(#speedGradient);
+  stroke-dasharray:var(--arc-len);
+  stroke-dashoffset:calc(var(--arc-len) * (1 - var(--speed-progress)));
+  transition:stroke-dashoffset .35s ease;
+  filter:drop-shadow(0 0 calc(8px + var(--speed-glow) * 14px) rgba(244,63,94,.7));
+}
+.dial .tick{stroke:rgba(255,255,255,.55);stroke-width:2;stroke-linecap:round;}
+.dial .tick-major{stroke:rgba(255,255,255,.95);stroke-width:3;}
+.dial .tick-label{
+  fill:rgba(255,255,255,.75);font-size:14px;font-weight:600;
+  text-anchor:middle;dominant-baseline:middle;
+}
+.dial .needle{
+  stroke:#FFFFFF;stroke-width:5;stroke-linecap:round;
+  filter:drop-shadow(0 0 8px rgba(255,255,255,.6));
+  /* 旋转通过 JS rAF 控制（SVG transform 属性不支持 CSS transition），所以这里不再写 transition */
+}
+.dial .hub{fill:#0B0A1F;stroke:#FFFFFF;stroke-width:3;}
+
+/* 表盘中央数字（HTML 叠在 SVG 上） */
+.dial-center{
+  position:absolute;left:50%;top:55%;transform:translate(-50%,-50%);
+  text-align:center;line-height:1;pointer-events:none;
+}
+.dial-center .num{
+  font-size:clamp(72px,18vw,108px);
+  font-weight:900;
+  font-variant-numeric:tabular-nums;
+  letter-spacing:-2px;
+  text-shadow:0 6px 18px rgba(0,0,0,.45);
+}
+.dial-center .unit{
+  margin-top:4px;font-size:14px;font-weight:700;color:var(--c-text-dim);
+  letter-spacing:2px;
+}
+
+/* ===== 实际速度 / 倍率提示 ===== */
+.meta{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 6px;font-size:13px;color:var(--c-text-dim);
+}
+.meta b{color:var(--c-text);font-weight:700;font-variant-numeric:tabular-nums;}
+.meta .gps-dot{
+  display:inline-block;width:8px;height:8px;border-radius:50%;
+  background:#94A3B8;margin-right:6px;vertical-align:middle;
+}
+.meta.gps-on .gps-dot{background:var(--c-green);box-shadow:0 0 8px var(--c-green);}
+.meta.gps-bad .gps-dot{background:var(--c-red);}
+
+/* ===== 倍率切换 ===== */
+.multi{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+}
+.multi button{
+  padding:10px 0;border-radius:14px;
+  background:var(--c-card);border:1px solid var(--c-card-line);
+  font-size:13px;font-weight:700;
+  display:flex;flex-direction:column;align-items:center;gap:2px;
+  transition:transform .15s ease,background .2s ease;
+}
+.multi button .e{font-size:22px;line-height:1;}
+.multi button.active{
+  background:linear-gradient(135deg,var(--c-accent),var(--c-blue));
+  border-color:transparent;
+  box-shadow:0 8px 22px rgba(124,58,237,.45);
+  transform:translateY(-2px);
+}
+.multi button:active{transform:scale(.94);}
+
+/* ===== GO 按钮 ===== */
+.go{
+  width:100%;padding:16px 0;border-radius:18px;
+  font-size:20px;font-weight:900;letter-spacing:4px;
+  background:linear-gradient(135deg,#22C55E,#10B981);
+  box-shadow:0 14px 30px rgba(16,185,129,.45);
+  transition:transform .15s ease,filter .2s ease;
+}
+.go:active{transform:scale(.97);}
+.go.running{
+  background:linear-gradient(135deg,#F43F5E,#DC2626);
+  box-shadow:0 14px 30px rgba(244,63,94,.45);
+}
+
+/* ===== 倒计时全屏 ===== */
+.countdown{
+  position:fixed;inset:0;z-index:50;
+  display:none;align-items:center;justify-content:center;
+  background:rgba(11,10,31,.7);backdrop-filter:blur(8px);
+  font-size:140px;font-weight:900;color:#fff;
+  text-shadow:0 10px 40px rgba(0,0,0,.6);
+}
+.countdown.show{display:flex;}
+.countdown.go-text{font-size:96px;color:var(--c-yellow);}
+@keyframes pop{
+  0%{transform:scale(.4);opacity:0;}
+  60%{transform:scale(1.15);opacity:1;}
+  100%{transform:scale(1);opacity:1;}
+}
+.countdown span{display:inline-block;animation:pop .9s ease;}
+
+/* ===== 设置抽屉 ===== */
+.sheet{
+  position:fixed;left:0;right:0;bottom:0;z-index:60;
+  background:#1E1B4B;border-top-left-radius:22px;border-top-right-radius:22px;
+  padding:20px 22px calc(28px + var(--safe-bottom));
+  transform:translateY(110%);transition:transform .3s ease;
+  border-top:1px solid var(--c-card-line);
+  box-shadow:0 -20px 60px rgba(0,0,0,.6);
+}
+.sheet.open{transform:translateY(0);}
+.sheet h3{font-size:16px;margin-bottom:14px;display:flex;align-items:center;gap:8px;}
+.sheet .row{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:14px 0;border-bottom:1px dashed var(--c-card-line);
+  font-size:15px;
+}
+.sheet .row:last-of-type{border-bottom:0;}
+.sheet .row .desc{color:var(--c-text-dim);font-size:12px;margin-top:2px;}
+.toggle{
+  width:50px;height:28px;border-radius:999px;background:rgba(255,255,255,.18);
+  position:relative;transition:background .2s;
+}
+.toggle::after{
+  content:"";position:absolute;top:3px;left:3px;width:22px;height:22px;
+  border-radius:50%;background:#fff;transition:transform .2s;
+}
+.toggle.on{background:var(--c-green);}
+.toggle.on::after{transform:translateX(22px);}
+.seg{display:flex;background:rgba(255,255,255,.10);border-radius:10px;padding:3px;}
+.seg button{padding:6px 14px;border-radius:8px;font-size:13px;font-weight:600;color:var(--c-text-dim);}
+.seg button.active{background:var(--c-accent);color:#fff;}
+.sheet .danger{
+  margin-top:18px;width:100%;padding:12px;border-radius:12px;
+  background:rgba(244,63,94,.15);border:1px solid rgba(244,63,94,.45);
+  color:#FCA5A5;font-weight:700;
+}
+.sheet .close{
+  position:absolute;top:12px;right:14px;width:32px;height:32px;font-size:20px;color:var(--c-text-dim);
+}
+.backdrop{
+  position:fixed;inset:0;z-index:55;background:rgba(0,0,0,.45);
+  display:none;
+}
+.backdrop.show{display:block;}
+
+/* ===== 新纪录五彩纸屑 ===== */
+.confetti{
+  position:fixed;inset:0;z-index:40;pointer-events:none;overflow:hidden;
+  display:none;
+}
+.confetti.show{display:block;}
+.confetti i{
+  position:absolute;top:-20px;width:10px;height:14px;border-radius:2px;
+  animation:fall 2.5s ease-in forwards;
+}
+@keyframes fall{
+  to{transform:translateY(110vh) rotate(720deg);opacity:0;}
+}
+.toast{
+  position:fixed;left:50%;top:30%;transform:translate(-50%,-50%);
+  z-index:45;padding:18px 28px;border-radius:16px;
+  background:linear-gradient(135deg,#FACC15,#F59E0B);
+  color:#1E1B4B;font-weight:900;font-size:22px;letter-spacing:2px;
+  box-shadow:0 18px 40px rgba(0,0,0,.5);
+  display:none;animation:pop .6s ease;
+}
+.toast.show{display:block;}
+
+/* ===== 权限提示 ===== */
+.perm{
+  position:fixed;inset:0;z-index:70;display:none;
+  align-items:center;justify-content:center;padding:28px;
+  background:rgba(11,10,31,.85);backdrop-filter:blur(12px);
+}
+.perm.show{display:flex;}
+.perm .card{
+  background:#1E1B4B;border:1px solid var(--c-card-line);
+  border-radius:20px;padding:26px;max-width:340px;text-align:center;
+}
+.perm .card h2{font-size:20px;margin-bottom:8px;}
+.perm .card p{font-size:14px;color:var(--c-text-dim);line-height:1.5;margin-bottom:18px;}
+.perm .card button{
+  width:100%;padding:14px;border-radius:14px;font-weight:800;font-size:15px;
+  background:linear-gradient(135deg,var(--c-accent),var(--c-blue));
+}
+.perm .card .secondary{
+  margin-top:8px;background:transparent;color:var(--c-text-dim);font-size:13px;font-weight:500;
+}
+
+/* 小屏适配 */
+@media (max-height:680px){
+  .mascot{font-size:46px;margin-top:0;}
+  .dial-center .num{font-size:84px;}
+  .multi button{padding:8px 0;font-size:12px;}
+  .multi button .e{font-size:18px;}
+  .go{padding:14px 0;font-size:18px;}
+}
+</style>
+</head>
+<body>
+
+<div class="bg"></div>
+<div class="bg-hot"></div>
+<div class="lines" id="lines"></div>
+
+<div class="app">
+
+  <!-- 顶栏 -->
+  <div class="top">
+    <div class="record">
+      <span class="trophy">🏆</span>
+      <span>最高 <b class="num" id="topSpeed">0</b> <span id="topUnit">km/h</span></span>
+    </div>
+    <div class="icon-row">
+      <button class="icon-btn" id="muteBtn" aria-label="静音">🔊</button>
+      <button class="icon-btn" id="settingsBtn" aria-label="设置">⚙️</button>
+    </div>
+  </div>
+
+  <!-- 吉祥物 -->
+  <div class="mascot bounce" id="mascot">🦖</div>
+
+  <!-- 表盘 -->
+  <div class="dial-wrap">
+    <svg class="dial" viewBox="0 0 300 300" id="dial">
+      <defs>
+        <linearGradient id="speedGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+          <stop offset="0%" stop-color="#22C55E"/>
+          <stop offset="35%" stop-color="#FACC15"/>
+          <stop offset="70%" stop-color="#F97316"/>
+          <stop offset="100%" stop-color="#F43F5E"/>
+        </linearGradient>
+      </defs>
+      <!-- track + progress + ticks 由 JS 注入 -->
+      <g id="dialBody"></g>
+      <line class="needle" id="needle" x1="150" y1="165" x2="150" y2="60"/>
+      <circle class="hub" cx="150" cy="165" r="10"/>
+    </svg>
+    <div class="dial-center">
+      <div class="num" id="speedNum">0</div>
+      <div class="unit" id="speedUnit">KM/H</div>
+    </div>
+  </div>
+
+  <!-- 实际速度 + 倍率 -->
+  <div class="meta" id="metaBar">
+    <div><span class="gps-dot"></span>实际 <b id="realSpeed">0</b> <span id="realUnit">km/h</span></div>
+    <div>倍率 <b id="multiLabel">1×</b></div>
+  </div>
+
+  <!-- 倍率切换 -->
+  <div class="multi" id="multi">
+    <button data-x="1" class="active"><span class="e">🐢</span><span>1×</span></button>
+    <button data-x="2"><span class="e">🚲</span><span>2×</span></button>
+    <button data-x="4"><span class="e">🏎️</span><span>4×</span></button>
+    <button data-x="8"><span class="e">🚀</span><span>8×</span></button>
+  </div>
+
+  <!-- GO 按钮 -->
+  <button class="go" id="goBtn">出发！</button>
+</div>
+
+<!-- 倒计时 -->
+<div class="countdown" id="countdown"><span id="countdownText">3</span></div>
+
+<!-- 五彩纸屑 + 新纪录 toast -->
+<div class="confetti" id="confetti"></div>
+<div class="toast" id="toast">🏆 新纪录！</div>
+
+<!-- 设置 -->
+<div class="backdrop" id="backdrop"></div>
+<div class="sheet" id="sheet">
+  <button class="close" id="closeSheet">✕</button>
+  <h3>⚙️ 设置</h3>
+  <div class="row">
+    <div>
+      <div>单位</div>
+      <div class="desc">国内默认 km/h，国外可切 mph</div>
+    </div>
+    <div class="seg" id="unitSeg">
+      <button data-u="kmh" class="active">km/h</button>
+      <button data-u="mph">mph</button>
+    </div>
+  </div>
+  <div class="row">
+    <div>
+      <div>音效</div>
+      <div class="desc">出发倒数和倍率切换的提示音</div>
+    </div>
+    <div class="toggle on" id="soundToggle"></div>
+  </div>
+  <div class="row">
+    <div>
+      <div>震动</div>
+      <div class="desc">仅 Android 有效（iOS 不支持）</div>
+    </div>
+    <div class="toggle on" id="vibToggle"></div>
+  </div>
+  <div class="row">
+    <div>
+      <div>演示模式</div>
+      <div class="desc">不用 GPS，模拟速度变化（电脑可看）</div>
+    </div>
+    <div class="toggle" id="demoToggle"></div>
+  </div>
+  <div class="row">
+    <div>
+      <div>速度上限保护</div>
+      <div class="desc">放大后超过此值视为 GPS 抖动，丢弃</div>
+    </div>
+    <div class="seg" id="maxSeg">
+      <button data-m="200">200</button>
+      <button data-m="400" class="active">400</button>
+      <button data-m="800">800</button>
+    </div>
+  </div>
+  <button class="danger" id="resetBtn">🗑 重置最高纪录</button>
+</div>
+
+<!-- 权限引导（首次进入或被拒后再次点 GO） -->
+<div class="perm" id="permModal">
+  <div class="card">
+    <h2>🛰️ 需要 GPS 权限</h2>
+    <p>骑车测速要用到手机定位。点击下方按钮，浏览器会弹出权限请求，请选择"允许"。<br>（GPS 数据只在本地计算，不会上传任何地方）</p>
+    <button id="permGrant">好嘞，开启 GPS</button>
+    <button class="secondary" id="permDemo">先用演示模式玩玩</button>
+  </div>
+</div>
+
+<script>
+/* ============================================================
+   阿牛的速度  H5  ——  by 白树
+   纯静态单文件，无外部依赖。
+   ============================================================ */
+(function(){
+'use strict';
+
+/* ---------- 常量 ---------- */
+var DIAL_MAX_KMH = 200;          // 表盘量程（boosted 速度）
+var DIAL_MAX_MPH = 120;          // 切到 mph 时
+var ARC_LEN = 565.486;           // 270° * 2π * R(120) / 360 ≈ 565.49
+var STORE_KEY = 'aniu-speed.v1';
+var DEFAULTS = {
+  multiplier:1, unit:'kmh', sound:true, vib:true, demo:false, maxKmh:400, topKmh:0
+};
+
+/* ---------- 持久化 ---------- */
+var state = Object.assign({}, DEFAULTS);
+try{
+  var saved = JSON.parse(localStorage.getItem(STORE_KEY) || '{}');
+  state = Object.assign(state, saved);
+}catch(e){}
+
+function save(){
+  try{ localStorage.setItem(STORE_KEY, JSON.stringify(state)); }catch(e){}
+}
+
+/* ---------- DOM ---------- */
+var $ = function(id){ return document.getElementById(id); };
+var dialBody = $('dialBody'),
+    needle = $('needle'),
+    speedNum = $('speedNum'),
+    speedUnit = $('speedUnit'),
+    realSpeed = $('realSpeed'),
+    realUnit = $('realUnit'),
+    topSpeedEl = $('topSpeed'),
+    topUnit = $('topUnit'),
+    multiLabel = $('multiLabel'),
+    metaBar = $('metaBar'),
+    mascot = $('mascot'),
+    goBtn = $('goBtn'),
+    countdown = $('countdown'),
+    countdownText = $('countdownText'),
+    settingsBtn = $('settingsBtn'),
+    closeSheet = $('closeSheet'),
+    sheet = $('sheet'),
+    backdrop = $('backdrop'),
+    soundToggle = $('soundToggle'),
+    vibToggle = $('vibToggle'),
+    demoToggle = $('demoToggle'),
+    muteBtn = $('muteBtn'),
+    resetBtn = $('resetBtn'),
+    permModal = $('permModal'),
+    confetti = $('confetti'),
+    toast = $('toast'),
+    lines = $('lines');
+
+/* ---------- 表盘绘制 ---------- */
+// 表盘从 -135° 转到 +135°（以正下方为 0°），共 270°。
+// 这里用：以正上方 12 点为 0°，顺时针。表盘起点角 = -135°（左下），终点角 = +135°（右下），跨 270°。
+function polar(angleDeg, r){
+  var rad = (angleDeg - 90) * Math.PI / 180; // 把 0° 摆到 12 点方向
+  return { x: 150 + r*Math.cos(rad), y: 165 + r*Math.sin(rad) };
+}
+function arcPath(r, startDeg, endDeg){
+  var s = polar(startDeg, r), e = polar(endDeg, r);
+  var large = (endDeg - startDeg) > 180 ? 1 : 0;
+  return 'M '+s.x+' '+s.y+' A '+r+' '+r+' 0 '+large+' 1 '+e.x+' '+e.y;
+}
+
+function buildDial(){
+  var R = 120, parts = [];
+  // 底色环
+  parts.push('<path class="track" d="'+arcPath(R, -135, 135)+'"/>');
+  // 进度环
+  parts.push('<path class="progress" d="'+arcPath(R, -135, 135)+'" style="--arc-len:'+ARC_LEN+'"/>');
+  // 主刻度（每 25 km/h 一格，共 9 个）+ 数字
+  var steps = 8;
+  for (var i=0; i<=steps; i++){
+    var deg = -135 + (270*i/steps);
+    var p1 = polar(deg, R-2), p2 = polar(deg, R-22);
+    parts.push('<line class="tick tick-major" x1="'+p1.x+'" y1="'+p1.y+'" x2="'+p2.x+'" y2="'+p2.y+'"/>');
+    var lp = polar(deg, R-38);
+    var label = Math.round(DIAL_MAX_KMH * i / steps);
+    parts.push('<text class="tick-label" x="'+lp.x+'" y="'+lp.y+'">'+label+'</text>');
+  }
+  // 副刻度
+  for (var j=0; j<=steps*5; j++){
+    if (j%5 === 0) continue;
+    var d2 = -135 + (270*j/(steps*5));
+    var q1 = polar(d2, R-4), q2 = polar(d2, R-14);
+    parts.push('<line class="tick" x1="'+q1.x+'" y1="'+q1.y+'" x2="'+q2.x+'" y2="'+q2.y+'"/>');
+  }
+  dialBody.innerHTML = parts.join('');
+}
+buildDial();
+
+/* ---------- speed lines 装饰 ---------- */
+function buildLines(){
+  var html = '';
+  var n = 14;
+  for (var i=0; i<n; i++){
+    var left = (i*7+3)%100;
+    var dur = (0.4 + Math.random()*0.5).toFixed(2);
+    var delay = (Math.random()*2).toFixed(2);
+    var height = (60 + Math.random()*100).toFixed(0);
+    html += '<i style="left:'+left+'%;height:'+height+'px;animation-duration:'+dur+'s;animation-delay:-'+delay+'s"></i>';
+  }
+  lines.innerHTML = html;
+}
+buildLines();
+
+/* ---------- 单位 / 速度换算 ---------- */
+function toDisplay(kmh){
+  return state.unit === 'mph' ? kmh * 0.621371 : kmh;
+}
+function unitLabel(){ return state.unit === 'mph' ? 'mph' : 'km/h'; }
+function dialMax(){ return state.unit === 'mph' ? DIAL_MAX_MPH : DIAL_MAX_KMH; }
+
+function updateUnitLabels(){
+  speedUnit.textContent = unitLabel().toUpperCase();
+  realUnit.textContent = unitLabel();
+  topUnit.textContent = unitLabel();
+  multiLabel.textContent = state.multiplier + '×';
+  topSpeedEl.textContent = Math.round(toDisplay(state.topKmh));
+  // 重新渲染表盘上的标签数字
+  var labels = dialBody.querySelectorAll('.tick-label');
+  var max = dialMax();
+  for (var i=0; i<labels.length; i++){
+    labels[i].textContent = Math.round(max * i / (labels.length-1));
+  }
+}
+
+/* ---------- 渲染速度 ---------- */
+var lastRealKmh = 0, currentDispKmh = 0;
+var needleTargetAng = -135, needleCurrentAng = -135;
+
+(function needleLoop(){
+  // 每帧把当前角度向目标角度做指数靠近，得到丝滑的旋转
+  var diff = needleTargetAng - needleCurrentAng;
+  if (Math.abs(diff) > 0.05){
+    needleCurrentAng += diff * 0.18;
+  } else {
+    needleCurrentAng = needleTargetAng;
+  }
+  needle.setAttribute('transform', 'rotate('+needleCurrentAng.toFixed(2)+' 150 165)');
+  requestAnimationFrame(needleLoop);
+})();
+
+function render(rawKmh){
+  // 限幅保护：放大后超过设定值视为 GPS 抖动，沿用上一帧显示值
+  var boosted = rawKmh * state.multiplier;
+  if (boosted > state.maxKmh) boosted = currentDispKmh;
+  lastRealKmh = rawKmh;
+  currentDispKmh = boosted;
+
+  var dispNum = toDisplay(boosted);
+  var dispReal = toDisplay(rawKmh);
+
+  speedNum.textContent = Math.round(dispNum);
+  realSpeed.textContent = dispReal.toFixed(1);
+
+  // 表盘进度 (0~1)
+  var prog = Math.max(0, Math.min(1, dispNum / dialMax()));
+  document.documentElement.style.setProperty('--speed-progress', prog.toFixed(3));
+  // 暖色 / 加速线强度（在 60% 量程开始增强）
+  var glow = Math.max(0, Math.min(1, (prog - 0.4) / 0.6));
+  document.documentElement.style.setProperty('--speed-glow', glow.toFixed(3));
+
+  // 指针目标角度 -135 ~ +135（实际由 rAF 循环平滑插值到这个目标）
+  needleTargetAng = -135 + 270 * prog;
+
+  // 吉祥物表情
+  var face = '🦖';
+  if (dispNum >= 150) face = '🚀';
+  else if (dispNum >= 80)  face = '🏎️';
+  else if (dispNum >= 30)  face = '🚲';
+  if (mascot.dataset.face !== face){
+    mascot.dataset.face = face;
+    mascot.textContent = face;
+  }
+
+  // 最高纪录（用 raw kmh 存）
+  if (boosted > state.topKmh){
+    state.topKmh = boosted;
+    save();
+    topSpeedEl.textContent = Math.round(toDisplay(state.topKmh));
+    if (running) celebrate();
+  }
+}
+
+/* ---------- 庆祝动画 ---------- */
+var celebrating = false;
+function celebrate(){
+  if (celebrating) return;
+  celebrating = true;
+  // toast
+  toast.classList.add('show');
+  setTimeout(function(){ toast.classList.remove('show'); celebrating = false; }, 1500);
+  // 纸屑
+  var colors = ['#F43F5E','#FACC15','#22C55E','#3B82F6','#7C3AED','#F97316'];
+  var html = '';
+  for (var i=0; i<60; i++){
+    var l = (Math.random()*100).toFixed(1);
+    var d = (1.4 + Math.random()*1.2).toFixed(2);
+    var dl = (Math.random()*0.5).toFixed(2);
+    var c = colors[i%colors.length];
+    var rot = (Math.random()*360).toFixed(0);
+    html += '<i style="left:'+l+'%;background:'+c+';animation-duration:'+d+'s;animation-delay:'+dl+'s;transform:rotate('+rot+'deg)"></i>';
+  }
+  confetti.innerHTML = html;
+  confetti.classList.add('show');
+  setTimeout(function(){ confetti.classList.remove('show'); }, 2800);
+  haptic([60,40,80]);
+  beep('win');
+}
+
+/* ---------- 倍率 ---------- */
+var multiBtns = document.querySelectorAll('#multi button');
+function selectMultiplier(x, silent){
+  state.multiplier = x;
+  multiBtns.forEach(function(b){ b.classList.toggle('active', +b.dataset.x === x); });
+  multiLabel.textContent = x + '×';
+  save();
+  if (!silent){ haptic(20); beep('tick'); }
+  render(lastRealKmh);
+}
+multiBtns.forEach(function(b){
+  b.addEventListener('click', function(){ selectMultiplier(+b.dataset.x); });
+});
+
+/* ---------- GPS ---------- */
+var watchId = null;
+var demoTimer = null;
+var demoT = 0;
+
+function startSpeedSource(){
+  stopSpeedSource();
+  if (state.demo){
+    metaBar.classList.add('gps-on');
+    demoT = 0;
+    demoTimer = setInterval(function(){
+      demoT += 0.15;
+      // 主波：~20s 周期 0 -> 80 -> 0 km/h，让指针扫过整个表盘
+      var primary = 40 + 40 * Math.sin(demoT * 0.3 - Math.PI/2);
+      // 副波 + 噪声：让数字微抖，更像真实 GPS
+      var jitter = Math.sin(demoT * 1.7) * 3 + (Math.random()-0.5) * 2;
+      var base = Math.max(0, primary + jitter);
+      render(base);
+    }, 150);
+    return;
+  }
+  if (!('geolocation' in navigator)){
+    metaBar.classList.add('gps-bad');
+    alert('你这个浏览器没法定位，把演示模式打开就能玩。');
+    return;
+  }
+  metaBar.classList.remove('gps-on','gps-bad');
+  watchId = navigator.geolocation.watchPosition(
+    function(pos){
+      metaBar.classList.add('gps-on');
+      metaBar.classList.remove('gps-bad');
+      var s = pos.coords.speed; // m/s 或 null
+      if (s == null || s < 0) s = 0;
+      render(s * 3.6);
+    },
+    function(err){
+      console.warn('GPS error', err);
+      metaBar.classList.remove('gps-on');
+      metaBar.classList.add('gps-bad');
+      if (err.code === err.PERMISSION_DENIED){
+        showPerm();
+        stopRunning();
+      }
+    },
+    { enableHighAccuracy:true, maximumAge:1000, timeout:15000 }
+  );
+}
+function stopSpeedSource(){
+  if (watchId != null){ navigator.geolocation.clearWatch(watchId); watchId = null; }
+  if (demoTimer){ clearInterval(demoTimer); demoTimer = null; }
+}
+
+/* ---------- Wake Lock ---------- */
+var wakeLock = null;
+function keepAwake(on){
+  try{
+    if (on){
+      if ('wakeLock' in navigator){
+        navigator.wakeLock.request('screen').then(function(lock){
+          wakeLock = lock;
+          lock.addEventListener('release', function(){ wakeLock = null; });
+        }).catch(function(){});
+      }
+    } else if (wakeLock){
+      wakeLock.release().catch(function(){});
+      wakeLock = null;
+    }
+  }catch(e){}
+}
+document.addEventListener('visibilitychange', function(){
+  if (document.visibilityState === 'visible' && running) keepAwake(true);
+});
+
+/* ---------- 触觉 ---------- */
+function haptic(pattern){
+  if (!state.vib) return;
+  if (navigator.vibrate) try{ navigator.vibrate(pattern); }catch(e){}
+}
+
+/* ---------- WebAudio 合成音效 ---------- */
+var audioCtx = null;
+function ensureAudio(){
+  if (!state.sound) return null;
+  if (audioCtx) return audioCtx;
+  try{
+    var Ctx = window.AudioContext || window.webkitAudioContext;
+    if (Ctx) audioCtx = new Ctx();
+  }catch(e){}
+  return audioCtx;
+}
+function tone(freq, dur, type, gain){
+  var ctx = ensureAudio();
+  if (!ctx) return;
+  if (ctx.state === 'suspended') ctx.resume();
+  var osc = ctx.createOscillator();
+  var g = ctx.createGain();
+  osc.type = type || 'sine';
+  osc.frequency.value = freq;
+  osc.connect(g); g.connect(ctx.destination);
+  var t = ctx.currentTime;
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(gain || 0.18, t+0.01);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.start(t);
+  osc.stop(t + dur + 0.05);
+}
+function beep(kind){
+  if (!state.sound) return;
+  if (kind === 'tick') tone(880, 0.08, 'triangle', 0.14);
+  else if (kind === 'count') tone(660, 0.18, 'square', 0.18);
+  else if (kind === 'go') { tone(523, 0.18, 'square', 0.2); setTimeout(function(){tone(784,0.35,'square',0.22);}, 180); }
+  else if (kind === 'win') {
+    [523,659,784,1046].forEach(function(f,i){ setTimeout(function(){tone(f,0.18,'triangle',0.2);}, i*120); });
+  } else if (kind === 'stop') tone(220, 0.2, 'sawtooth', 0.16);
+}
+
+/* ---------- 启停 ---------- */
+var running = false, counting = false;
+function startRunning(){
+  if (running || counting) return;
+  // 演示模式不用权限直接走
+  if (!state.demo && !('geolocation' in navigator)){
+    state.demo = true; updateToggles(); save();
+  }
+  // 触发用户手势激活音频
+  ensureAudio();
+  // iOS 上首次需要由用户手势触发 watchPosition 才会弹出权限
+  countdownStart();
+}
+function stopRunning(){
+  running = false; counting = false;
+  goBtn.classList.remove('running');
+  goBtn.textContent = '出发！';
+  countdown.classList.remove('show');
+  stopSpeedSource();
+  keepAwake(false);
+  beep('stop');
+  haptic(40);
+}
+goBtn.addEventListener('click', function(){
+  if (running || counting) stopRunning(); else startRunning();
+});
+
+function countdownStart(){
+  counting = true;
+  goBtn.classList.add('running');
+  goBtn.textContent = '停止';
+  countdown.classList.remove('go-text');
+  var seq = ['3','2','1','GO!'];
+  var i = 0;
+  function step(){
+    countdown.classList.add('show');
+    countdown.classList.toggle('go-text', seq[i] === 'GO!');
+    countdownText.textContent = seq[i];
+    countdownText.style.animation = 'none';
+    void countdownText.offsetWidth;
+    countdownText.style.animation = '';
+    haptic(seq[i] === 'GO!' ? [80,30,120] : 30);
+    if (seq[i] === 'GO!') beep('go'); else beep('count');
+    i++;
+    if (i < seq.length){
+      setTimeout(step, 800);
+    } else {
+      setTimeout(function(){
+        countdown.classList.remove('show');
+        counting = false;
+        running = true;
+        keepAwake(true);
+        startSpeedSource();
+      }, 600);
+    }
+  }
+  step();
+}
+
+/* ---------- 设置面板 ---------- */
+function openSheet(){ sheet.classList.add('open'); backdrop.classList.add('show'); }
+function closeSheetFn(){ sheet.classList.remove('open'); backdrop.classList.remove('show'); }
+settingsBtn.addEventListener('click', openSheet);
+closeSheet.addEventListener('click', closeSheetFn);
+backdrop.addEventListener('click', closeSheetFn);
+
+/* 单位 */
+document.querySelectorAll('#unitSeg button').forEach(function(b){
+  b.addEventListener('click', function(){
+    state.unit = b.dataset.u;
+    save();
+    document.querySelectorAll('#unitSeg button').forEach(function(x){ x.classList.toggle('active', x===b); });
+    updateUnitLabels();
+    render(lastRealKmh);
+    haptic(20);
+  });
+});
+/* 速度上限 */
+document.querySelectorAll('#maxSeg button').forEach(function(b){
+  b.addEventListener('click', function(){
+    state.maxKmh = +b.dataset.m;
+    save();
+    document.querySelectorAll('#maxSeg button').forEach(function(x){ x.classList.toggle('active', x===b); });
+    haptic(20);
+  });
+});
+/* 开关组 */
+function bindToggle(el, key){
+  el.addEventListener('click', function(){
+    state[key] = !state[key];
+    el.classList.toggle('on', state[key]);
+    save();
+    haptic(20);
+    if (key === 'demo' && (running || counting)){
+      // 切到演示 / 切回 GPS：重启数据源
+      stopSpeedSource();
+      startSpeedSource();
+    }
+  });
+}
+bindToggle(soundToggle, 'sound');
+bindToggle(vibToggle, 'vib');
+bindToggle(demoToggle, 'demo');
+
+muteBtn.addEventListener('click', function(){
+  state.sound = !state.sound;
+  muteBtn.textContent = state.sound ? '🔊' : '🔇';
+  soundToggle.classList.toggle('on', state.sound);
+  save();
+});
+
+resetBtn.addEventListener('click', function(){
+  if (!confirm('真的把最高纪录清零吗？')) return;
+  state.topKmh = 0; save();
+  topSpeedEl.textContent = '0';
+  haptic([20,30,20]);
+});
+
+/* ---------- 权限提示 ---------- */
+function showPerm(){ permModal.classList.add('show'); }
+function hidePerm(){ permModal.classList.remove('show'); }
+$('permGrant').addEventListener('click', function(){
+  hidePerm();
+  startRunning();
+});
+$('permDemo').addEventListener('click', function(){
+  state.demo = true; updateToggles(); save();
+  hidePerm();
+  startRunning();
+});
+
+/* ---------- 同步 UI ---------- */
+function updateToggles(){
+  soundToggle.classList.toggle('on', state.sound);
+  vibToggle.classList.toggle('on', state.vib);
+  demoToggle.classList.toggle('on', state.demo);
+  muteBtn.textContent = state.sound ? '🔊' : '🔇';
+  document.querySelectorAll('#unitSeg button').forEach(function(x){
+    x.classList.toggle('active', x.dataset.u === state.unit);
+  });
+  document.querySelectorAll('#maxSeg button').forEach(function(x){
+    x.classList.toggle('active', +x.dataset.m === state.maxKmh);
+  });
+  selectMultiplier(state.multiplier, true);
+}
+
+/* ---------- URL 参数 ----------
+   ?demo=1 强制开启演示模式；?demo=0 强制关闭（覆盖 localStorage）。
+   主页两个入口分别带 demo=0 / demo=1，保证一键切换不会被上次状态污染。 */
+(function parseQuery(){
+  var m = location.search.match(/[?&]demo=([01])/);
+  if (m) state.demo = (m[1] === '1');
+})();
+
+/* ---------- 初始化 ---------- */
+updateToggles();
+updateUnitLabels();
+render(0);
+
+/* iOS 静音模式下 webaudio 需要用户手势激活 */
+document.addEventListener('touchstart', function once(){
+  ensureAudio();
+  document.removeEventListener('touchstart', once);
+}, {passive:true});
+
+})();
+</script>
+
+</body>
+</html>

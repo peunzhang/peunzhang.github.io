@@ -1,0 +1,20 @@
+{
+  "name": "阿牛的速度",
+  "short_name": "阿牛速度",
+  "description": "把手机绑在单车上，骑得越快屏幕里的小赛车越快！",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#1E1B4B",
+  "theme_color": "#1E1B4B",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

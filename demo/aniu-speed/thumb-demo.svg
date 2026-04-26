@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 150" width="260" height="150">
+  <defs>
+    <linearGradient id="bgD" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#F43F5E"/>
+      <stop offset="55%" stop-color="#F97316"/>
+      <stop offset="100%" stop-color="#7C3AED"/>
+    </linearGradient>
+    <linearGradient id="dialD" x1="0" y1="1" x2="1" y2="0">
+      <stop offset="0%" stop-color="#22C55E"/>
+      <stop offset="50%" stop-color="#FACC15"/>
+      <stop offset="100%" stop-color="#F43F5E"/>
+    </linearGradient>
+  </defs>
+  <rect x="0" y="0" width="260" height="150" fill="url(#bgD)"/>
+  <g transform="translate(75 115)">
+    <path d="M -60 0 A 60 60 0 0 1 60 0" fill="none" stroke="rgba(255,255,255,0.20)" stroke-width="14" stroke-linecap="round"/>
+    <path d="M -60 0 A 60 60 0 0 1 60 0" fill="none" stroke="url(#dialD)" stroke-width="14" stroke-linecap="round"/>
+    <line x1="0" y1="0" x2="55" y2="-25" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <circle cx="0" cy="0" r="8" fill="#1E1B4B" stroke="white" stroke-width="3"/>
+  </g>
+  <g transform="translate(15 16)">
+    <rect x="0" y="0" rx="6" ry="6" width="68" height="22" fill="rgba(0,0,0,0.55)"/>
+    <text x="34" y="15" text-anchor="middle" fill="#FACC15" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="12" font-weight="900" letter-spacing="2">DEMO</text>
+  </g>
+  <g transform="translate(170 60)">
+    <text x="0" y="0" fill="white" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="46" font-weight="900" letter-spacing="-2">88</text>
+    <text x="78" y="-2" fill="rgba(255,255,255,0.7)" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="13" font-weight="700">km/h</text>
+  </g>
+  <g transform="translate(170 80)">
+    <polygon points="0,0 0,14 12,7" fill="#FACC15"/>
+    <text x="22" y="11" fill="white" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="14" font-weight="800" letter-spacing="2">PLAY ME</text>
+  </g>
+  <text x="170" y="118" fill="rgba(255,255,255,0.6)" font-family="-apple-system,Helvetica,Arial,sans-serif" font-size="10" font-weight="600" letter-spacing="1">SIMULATED</text>
+</svg>
