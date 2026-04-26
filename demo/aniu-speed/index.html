@@ -218,6 +218,41 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
   0%,100%{ filter:brightness(1) saturate(1.1); }
   50%   { filter:brightness(1.2) saturate(1.4); }
 }
+.multi button{position:relative;}
+.multi button .badge{
+  position:absolute;top:-6px;right:-4px;
+  min-width:20px;height:20px;padding:0 6px;
+  border-radius:10px;background:#FACC15;color:#1E1B4B;
+  font:900 11px/20px -apple-system,Helvetica,Arial,sans-serif;
+  text-align:center;letter-spacing:0;
+  box-shadow:0 3px 8px rgba(0,0,0,.45);
+  border:1.5px solid #1E1B4B;
+  pointer-events:none;
+  font-variant-numeric:tabular-nums;
+}
+.multi button .badge.last{
+  background:#F43F5E;color:#fff;
+  animation:badgePulse 1s ease-in-out infinite;
+}
+@keyframes badgePulse{
+  0%,100%{ transform:scale(1); }
+  50%   { transform:scale(1.18); }
+}
+.multi button.exhausted{
+  opacity:.45;
+  filter:grayscale(.7);
+}
+.multi button.exhausted .badge{
+  background:#64748B;color:#CBD5E1;animation:none;
+}
+.multi button.shake{ animation:shake .45s ease; }
+@keyframes shake{
+  0%,100%{ transform:translateX(0); }
+  20%{ transform:translateX(-6px) rotate(-2deg); }
+  40%{ transform:translateX(6px)  rotate(2deg); }
+  60%{ transform:translateX(-4px); }
+  80%{ transform:translateX(4px); }
+}
 .multi button:active{transform:scale(.94);}
 
 /* ===== GO 按钮 ===== */
@@ -316,8 +351,17 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
   color:#1E1B4B;font-weight:900;font-size:22px;letter-spacing:2px;
   box-shadow:0 18px 40px rgba(0,0,0,.5);
   display:none;animation:pop .6s ease;
+  text-align:center;max-width:80vw;
 }
 .toast.show{display:block;}
+.toast.info{
+  background:linear-gradient(135deg,#3B82F6,#7C3AED);color:#fff;
+  font-size:18px;letter-spacing:1px;
+}
+.toast.warn{
+  background:linear-gradient(135deg,#475569,#1E293B);color:#fff;
+  font-size:18px;letter-spacing:1px;
+}
 
 /* ===== 权限提示 ===== */
 .perm{
@@ -401,16 +445,16 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     <div>倍率 <b id="multiLabel">1×</b></div>
   </div>
 
-  <!-- 倍率切换：从慢到夸张，越往后越疯 -->
+  <!-- 倍率切换：10× 及以下不限次，更高每天有额度（右上角徽章显示剩余） -->
   <div class="multi" id="multi">
     <button data-x="1" class="active"><span class="e">🐢</span><span>1×</span></button>
     <button data-x="2"><span class="e">🚲</span><span>2×</span></button>
     <button data-x="5"><span class="e">🏎️</span><span>5×</span></button>
     <button data-x="10"><span class="e">✈️</span><span>10×</span></button>
-    <button data-x="50" data-tier="hot"><span class="e">🚀</span><span>50×</span></button>
-    <button data-x="100" data-tier="hot"><span class="e">🛸</span><span>100×</span></button>
-    <button data-x="500" data-tier="insane"><span class="e">⚡</span><span>500×</span></button>
-    <button data-x="999" data-tier="insane"><span class="e">🌌</span><span>999×</span></button>
+    <button data-x="50"  data-tier="hot"    data-quota="10"><span class="e">🚀</span><span>50×</span><span class="badge"></span></button>
+    <button data-x="100" data-tier="hot"    data-quota="8"><span class="e">🛸</span><span>100×</span><span class="badge"></span></button>
+    <button data-x="500" data-tier="insane" data-quota="4"><span class="e">⚡</span><span>500×</span><span class="badge"></span></button>
+    <button data-x="999" data-tier="insane" data-quota="2"><span class="e">🌌</span><span>999×</span><span class="badge"></span></button>
   </div>
 
   <!-- GO 按钮 -->
@@ -422,7 +466,7 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
 
 <!-- 五彩纸屑 + 新纪录 toast -->
 <div class="confetti" id="confetti"></div>
-<div class="toast" id="toast">🏆 新纪录！</div>
+<div class="toast" id="toast"><span id="toastText">🏆 新纪录！</span></div>
 
 <!-- 设置 -->
 <div class="backdrop" id="backdrop"></div>
@@ -487,7 +531,9 @@ var DIAL_MAX_MPH = 120;          // 切到 mph 时
 var ARC_LEN = 565.486;           // 270° * 2π * R(120) / 360 ≈ 565.49
 var STORE_KEY = 'aniu-speed.v1';
 var DEFAULTS = {
-  multiplier:1, unit:'kmh', sound:true, vib:true, demo:false, topKmh:0
+  multiplier:1, unit:'kmh', sound:true, vib:true, demo:false, topKmh:0,
+  // 受限倍率每日额度（按 data-quota 在 HTML 里声明，这里只存"今天用过的"快照）
+  usage:{ date:'', counts:{} }
 };
 
 /* ---------- 持久化 ---------- */
@@ -670,14 +716,28 @@ function render(rawKmh){
   }
 }
 
+/* ---------- 通用 Toast ---------- */
+var toastTimer = null;
+function showToast(text, kind, dur){
+  var t = $('toast'), span = $('toastText');
+  t.classList.remove('warn','info');
+  if (kind === 'warn') t.classList.add('warn');
+  else if (kind === 'info') t.classList.add('info');
+  span.textContent = text;
+  t.classList.add('show');
+  // 重启入场动画
+  t.style.animation = 'none'; void t.offsetWidth; t.style.animation = '';
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove('show'); }, dur || 1600);
+}
+
 /* ---------- 庆祝动画 ---------- */
 var celebrating = false;
 function celebrate(){
   if (celebrating) return;
   celebrating = true;
-  // toast
-  toast.classList.add('show');
-  setTimeout(function(){ toast.classList.remove('show'); celebrating = false; }, 1500);
+  showToast('🏆 新纪录！', null, 1500);
+  setTimeout(function(){ celebrating = false; }, 1500);
   // 纸屑
   var colors = ['#F43F5E','#FACC15','#22C55E','#3B82F6','#7C3AED','#F97316'];
   var html = '';
@@ -696,9 +756,81 @@ function celebrate(){
   beep('win');
 }
 
-/* ---------- 倍率 ---------- */
+/* ---------- 倍率 + 每日额度 ---------- */
 var multiBtns = document.querySelectorAll('#multi button');
+
+// 从 HTML 的 data-quota 抽取每日上限：{ 50:10, 100:8, 500:4, 999:2 }
+var DAILY_QUOTA = (function(){
+  var q = {};
+  multiBtns.forEach(function(b){
+    if (b.dataset.quota) q[+b.dataset.x] = +b.dataset.quota;
+  });
+  return q;
+})();
+
+function todayStr(){
+  var d = new Date();
+  return d.getFullYear()+'-'+(d.getMonth()+1)+'-'+d.getDate();
+}
+function ensureUsage(){
+  if (!state.usage || state.usage.date !== todayStr()){
+    state.usage = { date: todayStr(), counts: {} };
+    Object.keys(DAILY_QUOTA).forEach(function(k){ state.usage.counts[k] = DAILY_QUOTA[k]; });
+    save();
+  } else {
+    // 防御：如果 HTML 改了额度，对没记录过的档位补默认
+    Object.keys(DAILY_QUOTA).forEach(function(k){
+      if (state.usage.counts[k] == null) state.usage.counts[k] = DAILY_QUOTA[k];
+    });
+  }
+}
+function remaining(x){
+  ensureUsage();
+  if (DAILY_QUOTA[x] == null) return Infinity;
+  return state.usage.counts[x] || 0;
+}
+function consume(x){
+  ensureUsage();
+  if (DAILY_QUOTA[x] == null) return true;
+  if (state.usage.counts[x] > 0){
+    state.usage.counts[x]--;
+    save();
+    return true;
+  }
+  return false;
+}
+
+function updateBadges(){
+  ensureUsage();
+  multiBtns.forEach(function(b){
+    var x = +b.dataset.x;
+    if (DAILY_QUOTA[x] == null) return;
+    var rem = state.usage.counts[x] || 0;
+    var badge = b.querySelector('.badge');
+    if (badge){
+      badge.textContent = rem;
+      badge.classList.toggle('last', rem === 1);
+    }
+    b.classList.toggle('exhausted', rem <= 0);
+  });
+}
+
 function selectMultiplier(x, silent){
+  // 已用光的档位不允许选择（避免到 GO 时再失败浪费一步）
+  if (DAILY_QUOTA[x] != null && remaining(x) <= 0 && !silent){
+    var btn = document.querySelector('#multi button[data-x="'+x+'"]');
+    if (btn){
+      btn.classList.remove('shake');
+      void btn.offsetWidth;
+      btn.classList.add('shake');
+    }
+    showToast(x + '× 今天用完啦，明天再来 🌅', 'warn', 1800);
+    haptic([60,80,60]);
+    beep('stop');
+    return;
+  }
+
+  // 切换选择本身不扣额度，仅仅是"挑货架"的动作
   state.multiplier = x;
   var tier = '';
   multiBtns.forEach(function(b){
@@ -710,8 +842,10 @@ function selectMultiplier(x, silent){
   });
   multiLabel.textContent = x + '×';
   save();
+  updateBadges();
+
   if (!silent){
-    // 越夸张的档位反馈越猛
+    // 越夸张反馈越猛
     if (tier === 'insane'){ haptic([30,40,30,40,80]); beep('win'); }
     else if (tier === 'hot'){ haptic([20,30,60]); beep('go'); }
     else { haptic(20); beep('tick'); }
@@ -840,8 +974,31 @@ function beep(kind){
 
 /* ---------- 启停 ---------- */
 var running = false, counting = false;
+var sessionConsumed = 0; // 本次出发是否扣过额度（用于 toast 文案）
+
 function startRunning(){
   if (running || counting) return;
+
+  // 受限倍率：出发的瞬间才扣 1 次。扣不到就拒绝出发。
+  var x = state.multiplier;
+  sessionConsumed = 0;
+  if (DAILY_QUOTA[x] != null){
+    if (remaining(x) <= 0){
+      // 防御分支：正常情况下选择时已被拒绝，这里再保一次
+      var btn = document.querySelector('#multi button[data-x="'+x+'"]');
+      if (btn){
+        btn.classList.remove('shake'); void btn.offsetWidth; btn.classList.add('shake');
+      }
+      showToast(x + '× 今天用完啦，换个倍率再出发 🌅', 'warn', 2000);
+      haptic([60,80,60]);
+      beep('stop');
+      return;
+    }
+    consume(x);
+    sessionConsumed = x;
+    updateBadges();
+  }
+
   // 演示模式不用权限直接走
   if (!state.demo && !('geolocation' in navigator)){
     state.demo = true; updateToggles(); save();
@@ -891,6 +1048,15 @@ function countdownStart(){
         running = true;
         keepAwake(true);
         startSpeedSource();
+        // 出发后通报本次消耗：让娃看到"今天还剩多少"
+        if (sessionConsumed){
+          var left = remaining(sessionConsumed);
+          var msg;
+          if (left === 0)      msg = sessionConsumed + '× 出发！今天最后一次 🥲';
+          else if (left === 1) msg = sessionConsumed + '× 出发！只剩最后 1 次 ⏳';
+          else                 msg = sessionConsumed + '× 出发！今天还剩 ' + left + ' 次';
+          showToast(msg, 'info', 2200);
+        }
       }, 600);
     }
   }
@@ -972,7 +1138,12 @@ function updateToggles(){
   // 兼容老 localStorage：如果存了不在新档位列表里的倍率，回到 1×
   var validX = Array.prototype.map.call(multiBtns, function(b){ return +b.dataset.x; });
   if (validX.indexOf(state.multiplier) < 0) state.multiplier = 1;
+  // 如果上次保留的倍率今天已经用完了，启动时回退到 1× 避免一进来就被 deny
+  if (DAILY_QUOTA[state.multiplier] != null && remaining(state.multiplier) <= 0){
+    state.multiplier = 1;
+  }
   selectMultiplier(state.multiplier, true);
+  updateBadges();
 }
 
 /* ---------- URL 参数 ----------
