@@ -4,7 +4,7 @@
  *   - 其他静态资源（manifest / icon / svg）：缓存优先 + 后台更新
  * 升级：改 VERSION 即可强制清旧缓存。
  */
-const VERSION = 'aniu-speed-2026-04-26-4';
+const VERSION = 'aniu-speed-2026-04-26-8';
 const ASSETS = [
   './',
   './index.html',

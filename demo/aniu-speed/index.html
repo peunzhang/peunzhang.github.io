@@ -43,6 +43,11 @@ body{
   user-select:none;
   -webkit-user-select:none;
   touch-action:manipulation;
+  transition:filter .3s ease;
+}
+/* ===== 护眼模式：整屏轻度变暖 + 降亮度/饱和度，减少蓝光 ===== */
+body.eyecare{
+  filter:brightness(.88) saturate(.85) sepia(.14);
 }
 button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
 
@@ -244,6 +249,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
 }
 .multi button.exhausted .badge{
   background:#64748B;color:#CBD5E1;animation:none;
+}
+.multi.locked button:not(.active){
+  opacity:.35;
+  filter:grayscale(.6);
+}
+.multi.locked button.active{
+  box-shadow:0 0 0 3px rgba(255,255,255,.18), 0 8px 22px rgba(0,0,0,.45);
 }
 .multi button.shake{ animation:shake .45s ease; }
 @keyframes shake{
@@ -534,8 +546,8 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
     <button data-x="2"><span class="e">🚲</span><span>2×</span></button>
     <button data-x="5"><span class="e">🏎️</span><span>5×</span></button>
     <button data-x="10"><span class="e">✈️</span><span>10×</span></button>
-    <button data-x="50"  data-tier="hot"    data-quota="10"><span class="e">🚀</span><span>50×</span><span class="badge"></span></button>
-    <button data-x="100" data-tier="hot"    data-quota="8"><span class="e">🛸</span><span>100×</span><span class="badge"></span></button>
+    <button data-x="50"  data-tier="hot"    data-quota="8"><span class="e">🚀</span><span>50×</span><span class="badge"></span></button>
+    <button data-x="100" data-tier="hot"    data-quota="6"><span class="e">🛸</span><span>100×</span><span class="badge"></span></button>
     <button data-x="500" data-tier="insane" data-quota="4"><span class="e">⚡</span><span>500×</span><span class="badge"></span></button>
     <button data-x="999" data-tier="insane" data-quota="2"><span class="e">🌌</span><span>999×</span><span class="badge"></span></button>
   </div>
@@ -579,6 +591,13 @@ button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;}
       <div class="desc">仅 Android 有效（iOS 不支持）</div>
     </div>
     <div class="toggle on" id="vibToggle"></div>
+  </div>
+  <div class="row">
+    <div>
+      <div>护眼模式</div>
+      <div class="desc">画面变柔，减少蓝光，娃看着更舒服</div>
+    </div>
+    <div class="toggle on" id="eyecareToggle"></div>
   </div>
   <div class="row">
     <div>
@@ -671,6 +690,7 @@ var ARC_LEN = 565.486;           // 270° * 2π * R(120) / 360 ≈ 565.49
 var STORE_KEY = 'aniu-speed.v1';
 var DEFAULTS = {
   multiplier:1, unit:'kmh', sound:true, vib:true, demo:false, topKmh:0,
+  eyecare:true, // 护眼模式：整屏轻度暖滤镜 + 降饱和/亮度，默认开启保护娃眼睛
   // 受限倍率每日额度（按 data-quota 在 HTML 里声明，这里只存"今天用过的"快照）
   usage:{ date:'', counts:{} }
 };
@@ -708,6 +728,7 @@ var dialBody = $('dialBody'),
     backdrop = $('backdrop'),
     soundToggle = $('soundToggle'),
     vibToggle = $('vibToggle'),
+    eyecareToggle = $('eyecareToggle'),
     demoToggle = $('demoToggle'),
     muteBtn = $('muteBtn'),
     resetBtn = $('resetBtn'),
@@ -1070,6 +1091,11 @@ function updateBadges(){
 }
 
 function selectMultiplier(x, silent){
+  // 运行/倒计时中：直接静默拒绝（按钮已通过 .multi.locked 视觉变暗，足够暗示）
+  if ((running || counting) && !silent && x !== state.multiplier){
+    return;
+  }
+
   // 已用光的档位不允许选择（避免到 GO 时再失败浪费一步）
   if (DAILY_QUOTA[x] != null && remaining(x) <= 0 && !silent){
     var btn = document.querySelector('#multi button[data-x="'+x+'"]');
@@ -1228,14 +1254,12 @@ function beep(kind){
 
 /* ---------- 启停 ---------- */
 var running = false, counting = false;
-var sessionConsumed = 0; // 本次出发是否扣过额度（用于 toast 文案）
 
 function startRunning(){
   if (running || counting) return;
 
   // 受限倍率：出发的瞬间才扣 1 次。扣不到就拒绝出发。
   var x = state.multiplier;
-  sessionConsumed = 0;
   if (DAILY_QUOTA[x] != null){
     if (remaining(x) <= 0){
       // 防御分支：正常情况下选择时已被拒绝，这里再保一次
@@ -1249,7 +1273,6 @@ function startRunning(){
       return;
     }
     consume(x);
-    sessionConsumed = x;
     updateBadges();
   }
 
@@ -1259,6 +1282,9 @@ function startRunning(){
   }
   // 触发用户手势激活音频
   ensureAudio();
+  // 锁定倍率切换（含倒计时阶段，避免数到 1/2 时改了倍率）
+  var multiBox = document.getElementById('multi');
+  if (multiBox) multiBox.classList.add('locked');
   // iOS 上首次需要由用户手势触发 watchPosition 才会弹出权限
   countdownStart();
 }
@@ -1267,6 +1293,8 @@ function stopRunning(){
   goBtn.classList.remove('running');
   goBtn.textContent = '出发！';
   countdown.classList.remove('show');
+  var multiBox = document.getElementById('multi');
+  if (multiBox) multiBox.classList.remove('locked');
   stopSpeedSource();
   keepAwake(false);
   beep('stop');
@@ -1302,15 +1330,7 @@ function countdownStart(){
         running = true;
         keepAwake(true);
         startSpeedSource();
-        // 出发后通报本次消耗：让娃看到"今天还剩多少"
-        if (sessionConsumed){
-          var left = remaining(sessionConsumed);
-          var msg;
-          if (left === 0)      msg = sessionConsumed + '× 出发！今天最后一次 🥲';
-          else if (left === 1) msg = sessionConsumed + '× 出发！只剩最后 1 次 ⏳';
-          else                 msg = sessionConsumed + '× 出发！今天还剩 ' + left + ' 次';
-          showToast(msg, 'info', 2200);
-        }
+        // 不再弹"今天还剩 N 次"提示，按钮上的 badge 数字 + 红色脉冲已经够说明问题了
       }, 600);
     }
   }
@@ -1351,6 +1371,10 @@ function bindToggle(el, key){
 }
 bindToggle(soundToggle, 'sound');
 bindToggle(vibToggle, 'vib');
+bindToggle(eyecareToggle, 'eyecare');
+eyecareToggle.addEventListener('click', function(){
+  document.body.classList.toggle('eyecare', state.eyecare);
+});
 bindToggle(demoToggle, 'demo');
 
 muteBtn.addEventListener('click', function(){
@@ -1384,6 +1408,8 @@ $('permDemo').addEventListener('click', function(){
 function updateToggles(){
   soundToggle.classList.toggle('on', state.sound);
   vibToggle.classList.toggle('on', state.vib);
+  eyecareToggle.classList.toggle('on', state.eyecare);
+  document.body.classList.toggle('eyecare', state.eyecare);
   demoToggle.classList.toggle('on', state.demo);
   muteBtn.textContent = state.sound ? '🔊' : '🔇';
   document.querySelectorAll('#unitSeg button').forEach(function(x){
