@@ -1165,6 +1165,26 @@ document.addEventListener('touchstart', function once(){
   document.removeEventListener('touchstart', once);
 }, {passive:true});
 
+/* ---------- Service Worker：HTML 网络优先，确保 push 后 App 自动拿到新版 ---------- */
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', function(){
+    navigator.serviceWorker.register('./sw.js').then(function(reg){
+      // 监听新版本到来：如果旧 SW 已经在控制页面，新 SW installed 时弹个提示
+      reg.addEventListener('updatefound', function(){
+        var nw = reg.installing;
+        if (!nw) return;
+        nw.addEventListener('statechange', function(){
+          if (nw.state === 'installed' && navigator.serviceWorker.controller){
+            try{ showToast('🎉 阿牛速度升级啦！下次打开生效', 'info', 2400); }catch(e){}
+          }
+        });
+      });
+      // 每次启动主动 check，不用等浏览器默认的 24 小时
+      try{ reg.update(); }catch(e){}
+    }).catch(function(){ /* 注册失败也不影响功能 */ });
+  });
+}
+
 })();
 </script>
 
