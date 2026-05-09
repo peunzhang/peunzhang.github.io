@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 150" width="260" height="150">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f6efe1"/>
+      <stop offset="100%" stop-color="#d8c4a3"/>
+    </linearGradient>
+    <radialGradient id="sun" cx="78%" cy="18%" r="70%">
+      <stop offset="0%" stop-color="#ffebb4" stop-opacity="0.7"/>
+      <stop offset="100%" stop-color="#ffebb4" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="boxMint" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#a9dfd3"/>
+      <stop offset="100%" stop-color="#6bbcaa"/>
+    </linearGradient>
+    <linearGradient id="boxPeach" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#f1d3c4"/>
+      <stop offset="100%" stop-color="#c9a78f"/>
+    </linearGradient>
+    <linearGradient id="boxWood" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#caa07a"/>
+      <stop offset="100%" stop-color="#8e6840"/>
+    </linearGradient>
+    <radialGradient id="disc" cx="40%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#fff2c3"/>
+      <stop offset="60%" stop-color="#f3c969"/>
+      <stop offset="100%" stop-color="#b07a2a"/>
+    </radialGradient>
+    <linearGradient id="pawn" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0%" stop-color="#646286"/>
+      <stop offset="50%" stop-color="#2f2e4d"/>
+      <stop offset="100%" stop-color="#13122a"/>
+    </linearGradient>
+    <radialGradient id="head" cx="35%" cy="35%" r="70%">
+      <stop offset="0%" stop-color="#ffffff" stop-opacity="0.7"/>
+      <stop offset="40%" stop-color="#ffffff" stop-opacity="0.1"/>
+      <stop offset="100%" stop-color="#1f1d33"/>
+    </radialGradient>
+  </defs>
+
+  <!-- Sky background -->
+  <rect width="260" height="150" fill="url(#bg)"/>
+  <rect width="260" height="150" fill="url(#sun)"/>
+
+  <!-- Soft clouds -->
+  <g fill="#ffffff" opacity="0.6">
+    <ellipse cx="46" cy="32" rx="14" ry="6"/>
+    <ellipse cx="60" cy="28" rx="10" ry="5"/>
+    <ellipse cx="208" cy="46" rx="16" ry="6"/>
+  </g>
+
+  <!-- Subtle iso floor lines -->
+  <g stroke="#785532" stroke-opacity="0.10" stroke-width="1" fill="none">
+    <line x1="-10" y1="138" x2="200" y2="20"/>
+    <line x1="40"  y1="146" x2="250" y2="28"/>
+    <line x1="90"  y1="148" x2="280" y2="40"/>
+  </g>
+
+  <!-- Back block: music-box themed (upper-left, far) -->
+  <g transform="translate(58 70)">
+    <polygon points="26,4 20,-4 20,26 26,34" fill="#6e4824"/>
+    <rect x="-26" y="4" width="52" height="30" fill="url(#boxWood)"/>
+    <polygon points="-26,4 26,4 20,-4 -32,-4" fill="#ecd7b4"/>
+    <ellipse cx="-3" cy="0" rx="17" ry="6" fill="url(#disc)"/>
+    <ellipse cx="-3" cy="0" rx="11" ry="4" fill="none" stroke="#7a4814" stroke-opacity="0.45" stroke-width="0.6"/>
+    <ellipse cx="5" cy="1" rx="1.7" ry="1.2" fill="#3a2a18" transform="rotate(-12 5 1)"/>
+    <rect x="6" y="-4" width="0.9" height="5" fill="#3a2a18"/>
+    <ellipse cx="-3" cy="0" rx="20" ry="7.5" fill="none" stroke="#facc15" stroke-opacity="0.6" stroke-width="0.8"/>
+  </g>
+
+  <!-- Front block: mint (lower-right, near + tall) -->
+  <g transform="translate(178 96)">
+    <polygon points="32,5 24,-4 24,30 32,39" fill="#3a8576"/>
+    <rect x="-32" y="5" width="64" height="34" fill="url(#boxMint)"/>
+    <polygon points="-32,5 32,5 24,-4 -40,-4" fill="#bce9dd"/>
+    <circle cx="0" cy="0" r="1.4" fill="#2a6a5d"/>
+  </g>
+
+  <!-- Pawn standing on the front mint block -->
+  <g transform="translate(178 91)">
+    <ellipse cx="0" cy="0.5" rx="9" ry="1.6" fill="#000" fill-opacity="0.18"/>
+    <path d="
+      M -9.5 -0.5
+      C -12 -3, -10.5 -7.5, -7 -10
+      C -4.8 -13, -4.2 -19, -3.8 -24
+      C -4.0 -27.5, -3.0 -28.5, -2.0 -28.8
+      C -1.0 -29.0, 1.0 -29.0, 2.0 -28.8
+      C 3.0 -28.5, 4.0 -27.5, 3.8 -24
+      C 4.2 -19, 4.8 -13, 7 -10
+      C 10.5 -7.5, 12 -3, 9.5 -0.5
+      C 7 1.2, -7 1.2, -9.5 -0.5 Z" fill="url(#pawn)"/>
+    <ellipse cx="0" cy="0.6" rx="8.4" ry="1.4" fill="#000" fill-opacity="0.35"/>
+    <circle cx="0" cy="-34" r="6.6" fill="#3a3955"/>
+    <circle cx="0" cy="-34" r="6.6" fill="url(#head)"/>
+    <circle cx="-2.4" cy="-36.4" r="1.1" fill="#ffffff" fill-opacity="0.85"/>
+  </g>
+
+  <!-- Arc trajectory hint from back block to player -->
+  <path d="M 70 76 Q 130 30 178 80" stroke="#000" stroke-opacity="0.20" stroke-width="1.4" stroke-dasharray="2,3" fill="none"/>
+
+  <!-- Score in the corner -->
+  <g transform="translate(18 30)">
+    <text x="0" y="0" fill="#2c2c3a" font-family="-apple-system,Helvetica Neue,Helvetica,Arial,sans-serif" font-size="26" font-weight="900">12</text>
+  </g>
+</svg>

@@ -1,0 +1,1714 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>跳一跳</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background: #1a1a25;
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    color: #333;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    overscroll-behavior: none;
+  }
+  #app {
+    position: fixed; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    padding: 16px;
+  }
+  #stage {
+    position: relative;
+    width: 100%;
+    max-width: 420px;
+    height: 100%;
+    max-height: 760px;
+    background: linear-gradient(180deg, #f6efe1 0%, #ead9bd 55%, #d8c4a3 100%);
+    box-shadow: 0 20px 60px rgba(0,0,0,0.35);
+    overflow: hidden;
+    border-radius: 18px;
+    touch-action: none;
+    transition: background 0.6s ease;
+  }
+  /* 外观模式：解锁后切换到一组冷色调天空渐变作为视觉提示 */
+  #stage.appearance-on {
+    background: linear-gradient(180deg, #d6f0ff 0%, #b4d8f5 55%, #95bce0 100%);
+  }
+  @media (max-width: 480px) {
+    #app { padding: 0; }
+    #stage { border-radius: 0; max-height: 100%; }
+  }
+  canvas { display: block; width: 100%; height: 100%; }
+
+  .hud {
+    position: absolute; left: 20px; top: 60px;
+    color: #2c2c3a; pointer-events: none;
+  }
+  .hud .score {
+    font-size: 64px; font-weight: 800; line-height: 1; letter-spacing: 1px;
+    text-shadow: 0 1px 2px rgba(255,255,255,0.4);
+  }
+  .hud .combo {
+    font-size: 14px; color: #6b6b7a; margin-top: 6px; font-weight: 600;
+    height: 18px;
+  }
+
+  .topbar {
+    position: absolute; right: 14px; top: 14px;
+    display: flex; gap: 8px; align-items: center;
+    z-index: 5;
+  }
+  .topbar .best {
+    background: rgba(255,255,255,0.55);
+    color: #4a4a5a;
+    padding: 6px 12px; border-radius: 999px;
+    font-size: 12px; font-weight: 700;
+    backdrop-filter: blur(6px);
+    cursor: pointer;
+    user-select: none;
+    -webkit-user-select: none;
+    transition: transform 0.12s;
+  }
+  .topbar .best:active { transform: scale(0.92); }
+  .toggle-btn {
+    background: rgba(40,40,55,0.75); color: #fff;
+    border: none; border-radius: 999px; padding: 8px 14px;
+    font-size: 13px; font-weight: 600; cursor: pointer;
+    transition: all 0.2s;
+    backdrop-filter: blur(6px);
+  }
+  .toggle-btn.on {
+    background: linear-gradient(135deg, #f97316, #f43f5e);
+    box-shadow: 0 4px 14px rgba(244,63,94,0.4);
+  }
+
+  .charge-wrap {
+    position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
+    width: 60%; max-width: 280px; pointer-events: none;
+  }
+  .charge {
+    height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; overflow: hidden;
+  }
+  .charge .fill {
+    height: 100%; width: 0%;
+    background: linear-gradient(90deg, #22c55e, #facc15, #f43f5e);
+    border-radius: 3px;
+    transition: width 0.05s linear;
+  }
+  .hint {
+    text-align: center; color: #555; font-size: 12px;
+    margin-top: 8px; font-weight: 500; opacity: 0.85;
+    transition: opacity 0.3s;
+  }
+
+  .gameover {
+    position: absolute; inset: 0;
+    background: rgba(20,18,30,0.78);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    color: #fff; gap: 14px;
+    opacity: 0; pointer-events: none;
+    transition: opacity 0.35s ease;
+    backdrop-filter: blur(4px);
+  }
+  .gameover.show { opacity: 1; pointer-events: all; }
+  .gameover h1 { font-size: 38px; font-weight: 800; letter-spacing: 4px; }
+  .gameover .row { font-size: 16px; color: #d8d8e0; }
+  .gameover .row strong { color: #fff; font-size: 22px; margin-left: 4px; font-weight: 800; }
+  .gameover .restart {
+    margin-top: 12px;
+    background: linear-gradient(135deg, #f97316, #f43f5e);
+    color: #fff; border: none; border-radius: 999px;
+    padding: 12px 32px; font-size: 16px; font-weight: 700; cursor: pointer;
+    box-shadow: 0 8px 22px rgba(244,63,94,0.45);
+    transition: transform 0.15s;
+  }
+  .gameover .restart:active { transform: scale(0.96); }
+
+  .floating {
+    position: absolute;
+    pointer-events: none;
+    color: #ff5544;
+    font-weight: 800;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.15);
+    transform: translate(-50%, -50%);
+    opacity: 0;
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="game"></canvas>
+
+    <div class="hud">
+      <div class="score" id="score">0</div>
+      <div class="combo" id="combo"></div>
+    </div>
+
+    <div class="topbar">
+      <div class="best" id="best">最佳 0</div>
+      <button id="mute" class="toggle-btn">音效：开</button>
+    </div>
+
+    <div class="charge-wrap">
+      <div class="charge"><div class="fill" id="fill"></div></div>
+      <div class="hint" id="hint">按住屏幕蓄力，松开起跳</div>
+    </div>
+
+    <div class="gameover" id="gameover">
+      <h1>挑战失败</h1>
+      <div class="row">本次得分<strong id="finalScore">0</strong></div>
+      <div class="row">最佳记录<strong id="bestScore">0</strong></div>
+      <button class="restart" id="restart">再来一次</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  const stage = document.getElementById('stage');
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  const $score = document.getElementById('score');
+  const $combo = document.getElementById('combo');
+  const $best = document.getElementById('best');
+  const $fill = document.getElementById('fill');
+  const $hint = document.getElementById('hint');
+  const $muteBtn = document.getElementById('mute');
+  const $gameover = document.getElementById('gameover');
+  const $finalScore = document.getElementById('finalScore');
+  const $bestScore = document.getElementById('bestScore');
+  const $restart = document.getElementById('restart');
+
+  let W = 0, H = 0;
+  function resize() {
+    const rect = stage.getBoundingClientRect();
+    W = rect.width; H = rect.height;
+    canvas.width = Math.floor(W * dpr);
+    canvas.height = Math.floor(H * dpr);
+    canvas.style.width = W + 'px';
+    canvas.style.height = H + 'px';
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  resize();
+  if (window.ResizeObserver) {
+    new ResizeObserver(resize).observe(stage);
+  } else {
+    window.addEventListener('resize', resize);
+  }
+
+  // -------- Utilities --------
+  // Isometric projection. Each block stores (bx, by) — its position in
+  // screen space relative to a moving camera. Jumps alternate between
+  // two iso directions (DIR_RIGHT / DIR_LEFT) so the path zig-zags up
+  // the screen instead of going one straight diagonal line.
+  const ANCHOR_FX = 0.50;             // current block sits at this fraction of W (center)
+  const ANCHOR_FY = 0.78;             // ... and this fraction of H
+  const COS30 = Math.cos(Math.PI / 6);   // ≈ 0.866
+  const SIN30 = Math.sin(Math.PI / 6);   // = 0.5
+  const DIR_RIGHT = { dx:  COS30, dy: -SIN30, sign:  1 };
+  const DIR_LEFT  = { dx: -COS30, dy: -SIN30, sign: -1 };
+  const anchorX = () => W * ANCHOR_FX;
+  const anchorY = () => H * ANCHOR_FY;
+  const groundY = anchorY; // backwards compat (used only as anchor Y now)
+  // Project a "world" position (bx, by, before camera offset) to absolute screen.
+  function screenOf(bx, by) {
+    return {
+      sx: anchorX() + (bx - game.cameraBX),
+      sy: anchorY() + (by - game.cameraBY),
+    };
+  }
+  const COLORS = ['#f1d3c4', '#bcd5e8', '#cfe5c5', '#f0d990', '#cab8e0', '#f5b8c5', '#a9dfd3', '#e0c0a8', '#c8d8b0'];
+
+  const rand = (a, b) => Math.random() * (b - a) + a;
+  const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+  function shade(color, p) {
+    let c = color.replace('#', '');
+    if (c.length === 3) c = c.split('').map(x => x + x).join('');
+    const r = parseInt(c.substr(0, 2), 16);
+    const g = parseInt(c.substr(2, 2), 16);
+    const b = parseInt(c.substr(4, 2), 16);
+    const f = (v) => Math.max(0, Math.min(255, Math.round(p >= 0 ? v + (255 - v) * p : v + v * p)));
+    return `rgb(${f(r)},${f(g)},${f(b)})`;
+  }
+  const lighten = (c, p) => shade(c, p);
+  const darken = (c, p) => shade(c, -p);
+
+  // -------- Audio (Web Audio synth, no external assets) --------
+  const audio = (function () {
+    let ctx = null;
+    let master = null;
+    let muted = false;
+    let charge = null; // { osc1, osc2, sub, filter, gain, lfo, lfoGain }
+
+    function ensure() {
+      if (ctx) return ctx;
+      const Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return null;
+      ctx = new Ctx();
+      master = ctx.createGain();
+      master.gain.value = 0.7;
+      master.connect(ctx.destination);
+      return ctx;
+    }
+    function resume() {
+      if (ctx && ctx.state === 'suspended') ctx.resume();
+    }
+
+    function startCharge() {
+      if (muted) return;
+      ensure(); resume();
+      if (!ctx) return;
+      stopCharge(true);
+
+      const now = ctx.currentTime;
+
+      // Two slightly detuned sawtooth oscillators + a sub sine for body
+      const osc1 = ctx.createOscillator();
+      osc1.type = 'sawtooth';
+      osc1.frequency.value = 90;
+
+      const osc2 = ctx.createOscillator();
+      osc2.type = 'sawtooth';
+      osc2.frequency.value = 91.5; // detune for buzz
+
+      const sub = ctx.createOscillator();
+      sub.type = 'sine';
+      sub.frequency.value = 60;
+
+      // Low-pass filter for the muffled "winding up" feel
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 480;
+      filter.Q.value = 8;
+
+      // LFO modulating filter for a slight tremolo / wobble
+      const lfo = ctx.createOscillator();
+      lfo.type = 'sine';
+      lfo.frequency.value = 7;
+      const lfoGain = ctx.createGain();
+      lfoGain.gain.value = 80;
+      lfo.connect(lfoGain).connect(filter.frequency);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.18, now + 0.04);
+
+      osc1.connect(filter);
+      osc2.connect(filter);
+      sub.connect(filter);
+      filter.connect(gain);
+      gain.connect(master);
+
+      osc1.start(now); osc2.start(now); sub.start(now); lfo.start(now);
+      charge = { osc1, osc2, sub, filter, gain, lfo, lfoGain };
+    }
+
+    function updateCharge(progress) {
+      if (!charge || !ctx) return;
+      const now = ctx.currentTime;
+      const p = Math.max(0, Math.min(1, progress));
+      // Pitch sweep ~ 90Hz -> 380Hz; sub follows ~ 60 -> 150
+      const f = 90 + p * 290;
+      charge.osc1.frequency.setTargetAtTime(f, now, 0.02);
+      charge.osc2.frequency.setTargetAtTime(f * 1.012 + 1, now, 0.02);
+      charge.sub.frequency.setTargetAtTime(60 + p * 90, now, 0.05);
+      // Open the filter as it charges (brighter timbre)
+      charge.filter.frequency.setTargetAtTime(480 + p * 2200, now, 0.04);
+      // Slightly louder near the top
+      charge.gain.gain.setTargetAtTime(0.18 + p * 0.10, now, 0.05);
+      // LFO speeds up
+      charge.lfo.frequency.setTargetAtTime(7 + p * 10, now, 0.05);
+    }
+
+    function stopCharge(immediate) {
+      if (!charge || !ctx) return;
+      const now = ctx.currentTime;
+      const tail = immediate ? 0.01 : 0.05;
+      const c = charge;
+      try {
+        c.gain.gain.cancelScheduledValues(now);
+        c.gain.gain.setValueAtTime(c.gain.gain.value, now);
+        c.gain.gain.linearRampToValueAtTime(0, now + tail);
+        c.osc1.stop(now + tail + 0.01);
+        c.osc2.stop(now + tail + 0.01);
+        c.sub.stop(now + tail + 0.01);
+        c.lfo.stop(now + tail + 0.01);
+      } catch (e) { /* ignore */ }
+      charge = null;
+    }
+
+    function jump() {
+      if (muted) return;
+      ensure(); if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(700, now);
+      osc.frequency.exponentialRampToValueAtTime(220, now + 0.18);
+
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.25, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.20);
+
+      osc.connect(gain); gain.connect(master);
+      osc.start(now); osc.stop(now + 0.22);
+    }
+
+    function land() {
+      if (muted) return;
+      ensure(); if (!ctx) return;
+      const now = ctx.currentTime;
+      // short noise thud
+      const len = Math.floor(0.08 * ctx.sampleRate);
+      const buf = ctx.createBuffer(1, len, ctx.sampleRate);
+      const d = buf.getChannelData(0);
+      for (let i = 0; i < len; i++) {
+        d[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 2.4);
+      }
+      const src = ctx.createBufferSource();
+      src.buffer = buf;
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 260;
+      filter.Q.value = 1.2;
+      const gain = ctx.createGain();
+      gain.gain.value = 0.55;
+      src.connect(filter); filter.connect(gain); gain.connect(master);
+      src.start(now);
+      // pitched component for body
+      const osc = ctx.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(160, now);
+      osc.frequency.exponentialRampToValueAtTime(70, now + 0.12);
+      const og = ctx.createGain();
+      og.gain.setValueAtTime(0.18, now);
+      og.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+      osc.connect(og); og.connect(master);
+      osc.start(now); osc.stop(now + 0.16);
+    }
+
+    function perfect(combo) {
+      if (muted) return;
+      ensure(); if (!ctx) return;
+      const now = ctx.currentTime;
+      // ascending arpeggio, slightly higher per combo
+      const base = [880, 1108.73, 1318.51, 1760];
+      const shift = Math.min((combo - 1) * 0.05, 0.4);
+      base.forEach((f, i) => {
+        const osc = ctx.createOscillator();
+        osc.type = 'triangle';
+        osc.frequency.value = f * (1 + shift);
+        const g = ctx.createGain();
+        const start = now + i * 0.055;
+        g.gain.setValueAtTime(0.0001, start);
+        g.gain.exponentialRampToValueAtTime(0.18, start + 0.01);
+        g.gain.exponentialRampToValueAtTime(0.001, start + 0.35);
+        osc.connect(g); g.connect(master);
+        osc.start(start); osc.stop(start + 0.36);
+      });
+    }
+
+    function fail() {
+      if (muted) return;
+      ensure(); if (!ctx) return;
+      const now = ctx.currentTime;
+      const osc = ctx.createOscillator();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(260, now);
+      osc.frequency.exponentialRampToValueAtTime(55, now + 0.55);
+      const filter = ctx.createBiquadFilter();
+      filter.type = 'lowpass';
+      filter.frequency.value = 700;
+      const gain = ctx.createGain();
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.22, now + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + 0.6);
+      osc.connect(filter); filter.connect(gain); gain.connect(master);
+      osc.start(now); osc.stop(now + 0.62);
+    }
+
+    function bell(freq, start, dur, vol) {
+      // simple FM-ish bell using a triangle carrier + sine modulator on gain
+      const osc = ctx.createOscillator();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      const mod = ctx.createOscillator();
+      mod.type = 'sine';
+      mod.frequency.value = freq * 2.0;
+      const modGain = ctx.createGain();
+      modGain.gain.setValueAtTime(freq * 0.6, start);
+      modGain.gain.exponentialRampToValueAtTime(0.01, start + dur * 0.6);
+      mod.connect(modGain).connect(osc.frequency);
+      const g = ctx.createGain();
+      g.gain.setValueAtTime(0.0001, start);
+      g.gain.exponentialRampToValueAtTime(vol, start + 0.005);
+      g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+      osc.connect(g); g.connect(master);
+      osc.start(start); osc.stop(start + dur + 0.02);
+      mod.start(start); mod.stop(start + dur + 0.02);
+    }
+
+    function themeBonus() {
+      if (muted) return;
+      ensure(); if (!ctx) return;
+      const now = ctx.currentTime;
+      // bright two-note chime — generic ascending fifth
+      bell(880, now,        0.55, 0.18);
+      bell(1318.51, now + 0.10, 0.65, 0.18);
+    }
+
+    function musicBox() {
+      if (muted) return;
+      ensure(); if (!ctx) return;
+      const now = ctx.currentTime;
+      // Original short arpeggio in C major: a generic ascending
+      // 1-3-5-8 pattern. Not based on any specific copyrighted tune.
+      const C5 = 523.25, E5 = 659.25, G5 = 783.99, C6 = 1046.50, G4 = 392.00;
+      const seq = [
+        [C5, 0.00, 0.25],
+        [E5, 0.14, 0.25],
+        [G5, 0.28, 0.30],
+        [C6, 0.42, 0.55],
+        [G5, 0.78, 0.30],
+        [E5, 0.92, 0.30],
+        [G4, 1.06, 0.45],
+        [C5, 1.22, 0.70],
+      ];
+      seq.forEach(([f, t, d]) => bell(f, now + t, d, 0.16));
+    }
+
+    function setMuted(v) {
+      muted = !!v;
+      if (muted) stopCharge(true);
+      try { localStorage.setItem('jumpJumpMuted', muted ? '1' : '0'); } catch (e) {}
+    }
+    function isMuted() { return muted; }
+
+    try { muted = localStorage.getItem('jumpJumpMuted') === '1'; } catch (e) {}
+
+    return { startCharge, updateCharge, stopCharge, jump, land, perfect, fail, themeBonus, musicBox, setMuted, isMuted, resume };
+  })();
+
+  // -------- Block --------
+  // Themes: each is a non-branded original take on a real-world object.
+  // Standing still on a themed block for `idleTime` ms grants a bonus.
+  // `spring` is special: it auto-launches the player straight up
+  // for a short bonus hop right after landing.
+  const THEMES = {
+    music:  { name: '音乐盒',  bonus: 30, idleTime: 5000, color: '#caa07a', topColor: '#ecd7b4' },
+    shop:   { name: '杂货铺',  bonus: 15, idleTime: 4000, color: '#f3e3c8', topColor: '#fff6e6' },
+    cube:   { name: '魔方',    bonus: 10, idleTime: 3000, color: '#3a3a48', topColor: '#3a3a48' },
+    chess:  { name: '棋盘格',  bonus: 5,  idleTime: 2500, color: '#e8d9bc', topColor: '#f4e8d3' },
+    well:   { name: '井盖',    bonus: 5,  idleTime: 2500, color: '#7a7873', topColor: '#a39e93' },
+    spring: { name: '弹簧',    bonus: 8,  idleTime: 1200, color: '#d2d6db', topColor: '#eaedf2' },
+  };
+
+  // Block size archetypes: small / medium / large / pillar / stone
+  const BLOCK_SIZES = [
+    { w: [38, 48], h: [28, 34], weight: 2, label: 'small' },
+    { w: [55, 70], h: [30, 38], weight: 5, label: 'medium' },
+    { w: [76, 92], h: [30, 36], weight: 3, label: 'large' },
+    { w: [40, 50], h: [50, 64], weight: 1, label: 'pillar' }, // tall narrow
+    { w: [82, 96], h: [20, 26], weight: 2, label: 'stone' },  // wide flat
+  ];
+  function pickSize() {
+    const total = BLOCK_SIZES.reduce((s, x) => s + x.weight, 0);
+    let r = Math.random() * total;
+    for (const s of BLOCK_SIZES) {
+      if ((r -= s.weight) < 0) return s;
+    }
+    return BLOCK_SIZES[1];
+  }
+
+  class Block {
+    // prev: previous block (or null for the first block)
+    // dir: DIR_RIGHT | DIR_LEFT — the direction taken to reach this block
+    // dist: scalar world-distance from prev along that direction
+    constructor(prev, dir, dist, opts = {}) {
+      if (prev) {
+        this.bx = prev.bx + dir.dx * dist;
+        this.by = prev.by + dir.dy * dist;
+      } else {
+        this.bx = 0;
+        this.by = 0;
+      }
+      this.dirFromPrev = dir || DIR_RIGHT;
+      this.distFromPrev = dist || 0;
+
+      this.theme = opts.theme || null;
+      const themeDef = this.theme ? THEMES[this.theme] : null;
+
+      if (themeDef) {
+        this.shape = 'box';
+        this.topW = opts.topW != null ? opts.topW
+          : (this.theme === 'shop' ? rand(74, 86)
+             : this.theme === 'spring' ? rand(50, 62)
+             : rand(62, 78));
+        this.height = this.theme === 'shop' ? 44 : (this.theme === 'spring' ? 30 : 34);
+        this.color = themeDef.color;
+        this.themeBonus = themeDef.bonus;
+        this.themeIdleTime = themeDef.idleTime;
+      } else {
+        const arche = opts.arche || pickSize();
+        this.archeLabel = arche.label;
+        this.shape = opts.shape || (
+          arche.label === 'pillar' ? (Math.random() < 0.5 ? 'cylinder' : 'box')
+          : arche.label === 'stone' ? (Math.random() < 0.7 ? 'box' : 'cylinder')
+          : (Math.random() < 0.32 ? 'cylinder' : 'box')
+        );
+        this.topW = opts.topW != null ? opts.topW : rand(arche.w[0], arche.w[1]);
+        this.height = opts.height != null ? opts.height : rand(arche.h[0], arche.h[1]);
+        this.color = opts.color || pick(COLORS);
+        this.themeBonus = 0;
+        this.themeIdleTime = 0;
+      }
+
+      this.depth = 14;
+      this.bonusGiven = false;
+      this.justLanded = 0;
+      this.spinPhase = Math.random() * Math.PI * 2;
+    }
+
+    halfWidth() { return this.topW / 2 - 3; }
+    centerRadius() {
+      // smaller blocks → tighter perfect zone (skill reward)
+      return clamp(this.topW * 0.11, 5, 10);
+    }
+
+    draw(now) {
+      const { sx, sy: groundProjY } = screenOf(this.bx, this.by);
+      let squish = 1;
+      if (this.justLanded) {
+        const t = (now - this.justLanded) / 280;
+        if (t < 1) squish = 1 - 0.18 * Math.sin(t * Math.PI);
+        else this.justLanded = 0;
+      }
+      const h = this.height * squish;
+      const w = this.topW;
+      const dx = this.depth, dy = this.depth * 0.85;
+      const topY = groundProjY - h;
+
+      ctx.save();
+
+      if (this.shape === 'cylinder') {
+        const rx = w / 2, ry = w / 4.5;
+        const bodyGrad = ctx.createLinearGradient(sx - rx, 0, sx + rx, 0);
+        bodyGrad.addColorStop(0, lighten(this.color, 0.05));
+        bodyGrad.addColorStop(0.55, this.color);
+        bodyGrad.addColorStop(1, darken(this.color, 0.22));
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.moveTo(sx - rx, topY);
+        ctx.lineTo(sx - rx, topY + h);
+        ctx.ellipse(sx, topY + h, rx, ry, 0, Math.PI, 2 * Math.PI, true);
+        ctx.lineTo(sx + rx, topY);
+        ctx.closePath();
+        ctx.fill();
+        ctx.fillStyle = lighten(this.color, 0.12);
+        ctx.beginPath();
+        ctx.ellipse(sx, topY, rx, ry, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = lighten(this.color, 0.35);
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.ellipse(sx, topY, rx * 0.7, ry * 0.6, 0, Math.PI * 1.05, Math.PI * 1.95);
+        ctx.stroke();
+        ctx.fillStyle = darken(this.color, 0.25);
+        ctx.beginPath();
+        ctx.arc(sx, topY, 1.6, 0, Math.PI * 2);
+        ctx.fill();
+      } else {
+        // box body
+        ctx.fillStyle = this.color;
+        ctx.fillRect(sx - w / 2 + dx / 2, topY + dy / 2, w, h);
+        const fGrad = ctx.createLinearGradient(sx - w / 2, 0, sx + w / 2, 0);
+        fGrad.addColorStop(0, 'rgba(255,255,255,0.18)');
+        fGrad.addColorStop(0.6, 'rgba(0,0,0,0)');
+        fGrad.addColorStop(1, 'rgba(0,0,0,0.10)');
+        ctx.fillStyle = fGrad;
+        ctx.fillRect(sx - w / 2 + dx / 2, topY + dy / 2, w, h);
+
+        ctx.fillStyle = darken(this.color, 0.22);
+        ctx.beginPath();
+        ctx.moveTo(sx + w / 2 + dx / 2, topY + dy / 2);
+        ctx.lineTo(sx + w / 2 - dx / 2, topY - dy / 2);
+        ctx.lineTo(sx + w / 2 - dx / 2, topY - dy / 2 + h);
+        ctx.lineTo(sx + w / 2 + dx / 2, topY + dy / 2 + h);
+        ctx.closePath();
+        ctx.fill();
+
+        const topColor = this.theme ? THEMES[this.theme].topColor : lighten(this.color, 0.10);
+        ctx.fillStyle = topColor;
+        ctx.beginPath();
+        ctx.moveTo(sx - w / 2 + dx / 2, topY + dy / 2);
+        ctx.lineTo(sx + w / 2 + dx / 2, topY + dy / 2);
+        ctx.lineTo(sx + w / 2 - dx / 2, topY - dy / 2);
+        ctx.lineTo(sx - w / 2 - dx / 2, topY - dy / 2);
+        ctx.closePath();
+        ctx.fill();
+
+        // theme decoration on top + body
+        if (this.theme) {
+          this.drawTheme(sx, topY, w, h, dx, dy, now);
+        } else {
+          ctx.fillStyle = darken(this.color, 0.22);
+          ctx.beginPath();
+          ctx.arc(sx, topY, 1.6, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      }
+      ctx.restore();
+    }
+
+    drawTheme(sx, topY, w, h, dx, dy, now) {
+      // Coordinates of the four corners of the top face (parallelogram)
+      // FL: front-left, FR: front-right, BL: back-left, BR: back-right
+      const FL = [sx - w / 2 + dx / 2, topY + dy / 2];
+      const FR = [sx + w / 2 + dx / 2, topY + dy / 2];
+      const BR = [sx + w / 2 - dx / 2, topY - dy / 2];
+      const BL = [sx - w / 2 - dx / 2, topY - dy / 2];
+      const cx = (FL[0] + FR[0] + BR[0] + BL[0]) / 4;
+      const cy = (FL[1] + FR[1] + BR[1] + BL[1]) / 4;
+
+      ctx.save();
+      // Clip subsequent decoration to the top parallelogram so nothing leaks
+      ctx.beginPath();
+      ctx.moveTo(FL[0], FL[1]);
+      ctx.lineTo(FR[0], FR[1]);
+      ctx.lineTo(BR[0], BR[1]);
+      ctx.lineTo(BL[0], BL[1]);
+      ctx.closePath();
+      ctx.clip();
+
+      if (this.theme === 'music') {
+        // golden disc + clef-like swirl + tiny notes
+        const grad = ctx.createRadialGradient(cx - 4, cy - 4, 1, cx, cy, w * 0.42);
+        grad.addColorStop(0, '#fff2c3');
+        grad.addColorStop(0.6, '#f3c969');
+        grad.addColorStop(1, '#b07a2a');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, w * 0.36, w * 0.13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        // grooves
+        ctx.strokeStyle = 'rgba(120,70,20,0.35)';
+        ctx.lineWidth = 0.7;
+        for (let r = 0.18; r <= 0.34; r += 0.05) {
+          ctx.beginPath();
+          ctx.ellipse(cx, cy, w * r, w * (r * 0.36), 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // rotating note marker
+        const ang = (now / 900) + this.spinPhase;
+        const nx = cx + Math.cos(ang) * w * 0.22;
+        const ny = cy + Math.sin(ang) * w * 0.22 * 0.36;
+        ctx.fillStyle = '#3a2a18';
+        ctx.beginPath();
+        ctx.ellipse(nx, ny, 2.2, 1.6, ang, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillRect(nx + 1.2, ny - 7, 0.9, 6);
+        // body label band
+        ctx.fillStyle = 'rgba(255,255,255,0.28)';
+        ctx.fillRect(FL[0], FL[1] + 6, w, 5);
+      } else if (this.theme === 'shop') {
+        // awning stripes across the front face top
+        const stripeY = FL[1];
+        const stripeH = 9;
+        ctx.fillStyle = '#e94e4e';
+        ctx.fillRect(FL[0], stripeY, w, stripeH);
+        ctx.fillStyle = '#ffffff';
+        const stripeW = 8;
+        for (let i = 0; i < w; i += stripeW * 2) {
+          ctx.fillRect(FL[0] + i, stripeY, stripeW, stripeH);
+        }
+        ctx.fillStyle = '#e94e4e';
+        ctx.fillRect(FL[0], stripeY, w, 1.5);
+        // little chimney on top
+        ctx.fillStyle = '#c79a6c';
+        ctx.fillRect(cx - 5, cy - 3, 10, 6);
+        // sign label area on top
+        ctx.fillStyle = 'rgba(60,40,20,0.18)';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + 3, w * 0.30, w * 0.10, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = '#5a3a20';
+        ctx.font = 'bold 9px -apple-system, "PingFang SC", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('小卖部', cx, cy + 3);
+      } else if (this.theme === 'cube') {
+        // 3x3 colored grid on the parallelogram top face
+        const palette = ['#ef4444', '#f59e0b', '#fde047', '#22c55e', '#3b82f6', '#a855f7'];
+        const cells = 3;
+        // basis vectors of the parallelogram
+        const ux = (FR[0] - FL[0]) / cells, uy = (FR[1] - FL[1]) / cells;
+        const vx = (BL[0] - FL[0]) / cells, vy = (BL[1] - FL[1]) / cells;
+        for (let i = 0; i < cells; i++) {
+          for (let j = 0; j < cells; j++) {
+            const p0 = [FL[0] + ux * i + vx * j, FL[1] + uy * i + vy * j];
+            const p1 = [p0[0] + ux, p0[1] + uy];
+            const p2 = [p0[0] + ux + vx, p0[1] + uy + vy];
+            const p3 = [p0[0] + vx, p0[1] + vy];
+            ctx.fillStyle = palette[(i + j * 2 + Math.floor(this.spinPhase * 3)) % palette.length];
+            ctx.beginPath();
+            ctx.moveTo(p0[0], p0[1]);
+            ctx.lineTo(p1[0], p1[1]);
+            ctx.lineTo(p2[0], p2[1]);
+            ctx.lineTo(p3[0], p3[1]);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+            ctx.lineWidth = 1.2;
+            ctx.stroke();
+          }
+        }
+      } else if (this.theme === 'chess') {
+        const cells = 4;
+        const ux = (FR[0] - FL[0]) / cells, uy = (FR[1] - FL[1]) / cells;
+        const vx = (BL[0] - FL[0]) / cells, vy = (BL[1] - FL[1]) / cells;
+        for (let i = 0; i < cells; i++) {
+          for (let j = 0; j < cells; j++) {
+            const p0 = [FL[0] + ux * i + vx * j, FL[1] + uy * i + vy * j];
+            const p1 = [p0[0] + ux, p0[1] + uy];
+            const p2 = [p0[0] + ux + vx, p0[1] + uy + vy];
+            const p3 = [p0[0] + vx, p0[1] + vy];
+            ctx.fillStyle = (i + j) % 2 === 0 ? '#3a2a1a' : '#f4e8d3';
+            ctx.beginPath();
+            ctx.moveTo(p0[0], p0[1]);
+            ctx.lineTo(p1[0], p1[1]);
+            ctx.lineTo(p2[0], p2[1]);
+            ctx.lineTo(p3[0], p3[1]);
+            ctx.closePath();
+            ctx.fill();
+          }
+        }
+      } else if (this.theme === 'spring') {
+        // Inset metal base plate
+        ctx.fillStyle = '#9aa0aa';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy + 1, w * 0.34, w * 0.12, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#6f747d';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Coiled spring rising from base, gently bouncing if bonus still available
+        const bounce = this.bonusGiven ? 0 : Math.sin(now / 220 + this.spinPhase) * 1.5;
+        const coils = 4;
+        const coilGap = 4;
+        const baseY2 = cy - 2;
+        ctx.lineWidth = 2.2;
+        for (let i = 0; i < coils; i++) {
+          const yy = baseY2 - i * coilGap - bounce * (i / coils);
+          const rx = w * (0.20 - i * 0.012);
+          const ry = w * 0.06;
+          ctx.strokeStyle = i % 2 ? '#cfd4dc' : '#a7adb6';
+          ctx.beginPath();
+          ctx.ellipse(cx, yy, rx, ry, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+        // Top plate
+        const topPlateY = baseY2 - coils * coilGap - bounce;
+        const tg = ctx.createLinearGradient(cx - w * 0.22, topPlateY - 2, cx + w * 0.22, topPlateY + 2);
+        tg.addColorStop(0, '#eef1f5');
+        tg.addColorStop(1, '#b8bdc6');
+        ctx.fillStyle = tg;
+        ctx.beginPath();
+        ctx.ellipse(cx, topPlateY, w * 0.22, w * 0.075, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#7c828c';
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      } else if (this.theme === 'well') {
+        // dark circular cap with cross + radial pattern
+        ctx.fillStyle = '#46443f';
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, w * 0.36, w * 0.13, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = '#2c2a25';
+        ctx.lineWidth = 1.4;
+        ctx.beginPath();
+        ctx.moveTo(cx - w * 0.32, cy);
+        ctx.lineTo(cx + w * 0.32, cy);
+        ctx.moveTo(cx, cy - w * 0.11);
+        ctx.lineTo(cx, cy + w * 0.11);
+        ctx.stroke();
+        // rivets
+        ctx.fillStyle = '#2c2a25';
+        for (let a = 0; a < 8; a++) {
+          const t = (a / 8) * Math.PI * 2;
+          ctx.beginPath();
+          ctx.arc(cx + Math.cos(t) * w * 0.30, cy + Math.sin(t) * w * 0.10, 1.3, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.strokeStyle = 'rgba(255,255,255,0.10)';
+        ctx.lineWidth = 0.8;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy - 1, w * 0.32, w * 0.10, 0, Math.PI * 1.05, Math.PI * 1.95);
+        ctx.stroke();
+      }
+      ctx.restore();
+
+      // glow ring (drawn outside clip) when bonus available
+      if (!this.bonusGiven) {
+        const pulse = 0.5 + 0.5 * Math.sin(now / 320 + this.spinPhase);
+        ctx.save();
+        ctx.globalAlpha = 0.35 + pulse * 0.25;
+        ctx.strokeStyle = '#facc15';
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.ellipse(cx, cy, w * 0.40 + pulse * 2, w * 0.14 + pulse * 0.7, 0, 0, Math.PI * 2);
+        ctx.stroke();
+        ctx.restore();
+      }
+    }
+  }
+
+  // -------- Game --------
+  const SPEED = 0.32;       // px per ms charge
+  const MAX_CHARGE = 1500;  // ms
+  const JUMP_DURATION = 600;
+  const JUMP_HEIGHT = 110;
+  const SLIDE_DURATION = 380;
+
+  const game = {
+    state: 'idle', // idle | charging | jumping | sliding | gameover
+    score: 0,
+    combo: 0,
+    best: parseInt(localStorage.getItem('jumpJumpBest') || '0', 10) || 0,
+    blocks: [],
+    // Camera tracks the current block's screen-space position; subtract
+    // it from each block's bx/by to get on-screen coords.
+    cameraBX: 0, cameraBY: 0,
+    slideFromBX: 0, slideFromBY: 0,
+    slideToBX: 0, slideToBY: 0,
+    slideStart: 0,
+    cheat: false,
+    cheatReleaseAt: null,
+    cheatPendingJump: false,
+    idleStart: 0,
+    // After collecting the spring-block bonus, the next jump is auto-perfect.
+    springBoost: false,
+    player: { bx: 0, by: 0, lift: 0, rotation: 0, scaleX: 1, scaleY: 1 },
+    chargeStart: 0,
+    charge: 0,
+    // Jump physics in 2D screen space + scalar progress along jump direction
+    jumpStart: 0,
+    jumpFromBX: 0, jumpFromBY: 0,
+    jumpToBX: 0, jumpToBY: 0,
+    jumpDir: DIR_RIGHT,
+    jumpDist: 0,             // distance the player tries to traverse
+    jumpTargetDist: 0,       // actual cur->next distance (for accuracy check)
+    fallStart: 0,
+    failTilt: 0,
+    bonusToShow: '',
+    bonusTime: 0,
+    bonusBX: 0, bonusBY: 0,
+    rings: [],
+    sparks: [],
+    clouds: [],
+    // Screen shake
+    shakeAmount: 0,
+    shakeStart: 0,
+  };
+
+  function spawnInitial() {
+    game.blocks = [];
+    // First block is at the screen anchor (cameraB == 0 puts it there).
+    game.blocks.push(new Block(null, DIR_RIGHT, 0, { topW: 80, height: 36, shape: 'box' }));
+    game.cameraBX = 0;
+    game.cameraBY = 0;
+    spawnNext();
+    game.player.bx = 0;
+    game.player.by = 0;
+    game.player.lift = 0;
+    game.player.rotation = 0;
+    game.player.scaleX = 1;
+    game.player.scaleY = 1;
+  }
+
+  function spawnNext() {
+    const last = game.blocks[game.blocks.length - 1];
+    const minD = 70;
+    // Slightly gentler difficulty curve than before
+    const maxD = clamp(135 + game.score * 0.9, 135, 195);
+    const dist = rand(minD, maxD);
+
+    // Alternate direction with bias toward swapping (so it zig-zags),
+    // but ~30% chance to repeat last direction for variety.
+    const lastDir = last.dirFromPrev || DIR_RIGHT;
+    let dir;
+    if (Math.random() < 0.7) {
+      dir = lastDir === DIR_RIGHT ? DIR_LEFT : DIR_RIGHT;
+    } else {
+      dir = lastDir;
+    }
+
+    let opts = {};
+    const lastWasTheme = !!(last && last.theme);
+    const themeChance = clamp(0.06 + game.score * 0.005, 0.06, 0.22);
+    if (!lastWasTheme && game.score >= 3 && Math.random() < themeChance) {
+      const pool = [
+        { name: 'well',   weight: 5 },
+        { name: 'chess',  weight: 5 },
+        { name: 'spring', weight: 4 },
+        { name: 'cube',   weight: 4 },
+        { name: 'shop',   weight: 3 },
+        { name: 'music',  weight: 2 },
+      ];
+      const total = pool.reduce((s, t) => s + t.weight, 0);
+      let r = Math.random() * total;
+      for (const t of pool) {
+        if ((r -= t.weight) < 0) { opts.theme = t.name; break; }
+      }
+    }
+    game.blocks.push(new Block(last, dir, dist, opts));
+  }
+
+  function reset() {
+    game.score = 0;
+    game.combo = 0;
+    game.bonusToShow = '';
+    game.rings = [];
+    game.sparks = [];
+    game.fallStart = 0;
+    game.idleStart = 0;
+    game.cheatPendingJump = false;
+    game.shakeAmount = 0;
+    game.shakeStart = 0;
+    game.springBoost = false;
+    spawnInitial();
+    initClouds();
+    game.state = 'idle';
+    $gameover.classList.remove('show');
+    $hint.style.opacity = 0.85;
+    $fill.style.width = '0%';
+    updateUI();
+  }
+
+  function addShake(amount) {
+    game.shakeAmount = Math.max(game.shakeAmount, amount);
+    game.shakeStart = performance.now();
+  }
+
+  function initClouds() {
+    game.clouds = [];
+    for (let i = 0; i < 5; i++) {
+      game.clouds.push({
+        x: rand(0, W),
+        y: rand(20, H * 0.35),
+        r: rand(18, 32),
+        speed: rand(0.04, 0.10),
+        alpha: rand(0.35, 0.6),
+      });
+    }
+  }
+
+  function updateUI() {
+    $score.textContent = game.score;
+    $combo.textContent = game.combo > 1 ? `连击 x${game.combo}` : '';
+    $best.textContent = `最佳 ${game.best}`;
+  }
+
+  // -------- Input flow --------
+  function startCharge() {
+    if (game.state !== 'idle') return;
+    // In cheat mode: if we're standing on a themed block whose bonus
+    // hasn't been collected yet, queue the jump and let the idle timer finish.
+    if (game.cheat) {
+      const cur = game.blocks[0];
+      if (cur && cur.theme && !cur.bonusGiven) {
+        game.cheatPendingJump = true;
+        return;
+      }
+    }
+    game.state = 'charging';
+    game.chargeStart = performance.now();
+    game.charge = 0;
+    $hint.style.opacity = 0;
+    audio.startCharge();
+    if (game.cheat) {
+      const nxt = game.blocks[1];
+      const distance = nxt.distFromPrev;
+      const required = clamp(distance / SPEED, 0, MAX_CHARGE);
+      game.cheatReleaseAt = game.chargeStart + required;
+    } else {
+      game.cheatReleaseAt = null;
+    }
+  }
+
+  function awardThemeBonus(block) {
+    block.bonusGiven = true;
+    game.score += block.themeBonus;
+    if (game.score > game.best) {
+      game.best = game.score;
+      try { localStorage.setItem('jumpJumpBest', String(game.best)); } catch (e) {}
+    }
+    game.bonusToShow = `+${block.themeBonus}`;
+    game.bonusTime = performance.now();
+    game.bonusBX = block.bx;
+    game.bonusBY = block.by;
+    game.rings.push({ bx: block.bx, by: block.by, wh: block.height, t: performance.now(), big: true });
+    // particle burst (positions in 2D screen space, gravity pulls them down)
+    for (let i = 0; i < 22; i++) {
+      const ang = rand(-Math.PI, 0); // upper hemisphere
+      const sp = rand(80, 170);
+      game.sparks.push({
+        bx: block.bx,
+        by: block.by,
+        wh: block.height + 4,
+        vbx: Math.cos(ang) * sp * 0.5,
+        vby: 0,
+        vwy: -Math.sin(ang) * sp + 40,
+        life: 900, born: performance.now(),
+        color: block.theme === 'music' ? '#f3c969'
+             : block.theme === 'cube'  ? '#60a5fa'
+             : block.theme === 'shop'  ? '#ef4444'
+             : block.theme === 'spring'? '#aab0ba'
+             : '#facc15',
+      });
+    }
+    addShake(7);
+    if (block.theme === 'music') audio.musicBox();
+    else audio.themeBonus();
+    // Spring blocks: also queue a guaranteed-perfect next jump.
+    if (block.theme === 'spring') {
+      game.springBoost = true;
+    }
+    updateUI();
+  }
+
+  function releaseCharge() {
+    if (game.state !== 'charging') return;
+    const next = game.blocks[1];
+    let distance;
+    if (game.cheatReleaseAt !== null) {
+      // Cheat: jump exactly the cur->next distance for a perfect hit
+      distance = next.distFromPrev;
+      game.cheatReleaseAt = null;
+    } else if (game.springBoost) {
+      // Spring's queued boost overrides the player's charge with a perfect distance
+      distance = next.distFromPrev;
+      game.springBoost = false;
+    } else {
+      const t = clamp(performance.now() - game.chargeStart, 0, MAX_CHARGE);
+      distance = t * SPEED;
+    }
+    audio.stopCharge();
+    audio.jump();
+    game.jumpDir = next.dirFromPrev;
+    game.jumpFromBX = game.player.bx;
+    game.jumpFromBY = game.player.by;
+    game.jumpToBX = game.jumpFromBX + game.jumpDir.dx * distance;
+    game.jumpToBY = game.jumpFromBY + game.jumpDir.dy * distance;
+    game.jumpDist = distance;
+    game.jumpTargetDist = next.distFromPrev;
+    game.jumpStart = performance.now();
+    game.state = 'jumping';
+    game.player.scaleX = 1;
+    game.player.scaleY = 1;
+  }
+
+  function landOrFail() {
+    const next = game.blocks[1];
+    // 1D scalar accuracy: compare actual jump distance vs the cur->next distance.
+    const distFromCenter = Math.abs(game.jumpDist - game.jumpTargetDist);
+
+    if (distFromCenter <= next.halfWidth()) {
+      // success
+      let bonus = 1;
+      let perfect = false;
+      if (distFromCenter <= next.centerRadius()) {
+        perfect = true;
+        game.combo += 1;
+        bonus = Math.min(2 * game.combo, 32);
+        game.bonusToShow = `+${bonus}`;
+        game.bonusTime = performance.now();
+        game.bonusBX = next.bx;
+        game.bonusBY = next.by;
+        game.rings.push({ bx: next.bx, by: next.by, wh: next.height, t: performance.now() });
+        // perfect-hit screen shake scales with combo
+        addShake(Math.min(3 + game.combo, 9));
+      } else {
+        game.combo = 0;
+        bonus = 1;
+      }
+      audio.land();
+      if (perfect) audio.perfect(game.combo);
+      game.score += bonus;
+      if (game.score > game.best) {
+        game.best = game.score;
+        try { localStorage.setItem('jumpJumpBest', String(game.best)); } catch (e) {}
+      }
+      // Snap player onto the block's exact center (visual cleanliness),
+      // since the gameplay metric was 1D scalar accuracy anyway.
+      game.player.bx = next.bx;
+      game.player.by = next.by;
+      next.justLanded = performance.now();
+      game.blocks.shift();
+      spawnNext();
+      // Slide camera so the new current block (formerly `next`) is at the anchor
+      game.slideFromBX = game.cameraBX;
+      game.slideFromBY = game.cameraBY;
+      game.slideToBX = next.bx;
+      game.slideToBY = next.by;
+      game.slideStart = performance.now();
+      game.state = 'sliding';
+      updateUI();
+    } else {
+      // fail: landed off-target
+      game.player.bx = game.jumpToBX;
+      game.player.by = game.jumpToBY;
+      const tiltDir = game.jumpDist > game.jumpTargetDist ? 1 : -1;
+      game.failTilt = tiltDir;
+      game.state = 'gameover';
+      game.fallStart = performance.now();
+      game.combo = 0;
+      audio.fail();
+      addShake(14);
+      updateUI();
+      setTimeout(showGameOver, 850);
+    }
+  }
+
+  function showGameOver() {
+    $finalScore.textContent = game.score;
+    $bestScore.textContent = game.best;
+    $gameover.classList.add('show');
+  }
+
+  // -------- Render --------
+  function drawBackground(now) {
+    // Sun glow (top right)
+    const sunX = W * 0.78;
+    const sunY = H * 0.18;
+    const grad = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, W * 0.7);
+    grad.addColorStop(0, 'rgba(255,235,180,0.55)');
+    grad.addColorStop(0.4, 'rgba(255,235,180,0.12)');
+    grad.addColorStop(1, 'rgba(255,235,180,0)');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Drifting clouds (parallax: slower than camera)
+    drawClouds(now);
+
+    // Soft warm ground glow at the bottom (no explicit horizon line —
+    // the iso projection lets blocks float in front of a gradient).
+    const gradG = ctx.createLinearGradient(0, H * 0.55, 0, H);
+    gradG.addColorStop(0, 'rgba(180,140,90,0)');
+    gradG.addColorStop(0.55, 'rgba(160,115,70,0.06)');
+    gradG.addColorStop(1, 'rgba(120,80,40,0.18)');
+    ctx.fillStyle = gradG;
+    ctx.fillRect(0, H * 0.55, W, H - H * 0.55);
+
+    // Subtle iso "floor lines" fanning along the two jump directions so
+    // there's a hint of depth without a full grid.
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,85,50,0.06)';
+    ctx.lineWidth = 1;
+    const aX = anchorX(), aY = anchorY();
+    const FAN = 600;
+    for (let k = -4; k <= 6; k++) {
+      const off = k * 80;
+      ctx.beginPath();
+      ctx.moveTo(aX + off, aY + 10);
+      ctx.lineTo(aX + off + DIR_RIGHT.dx * FAN, aY + 10 + DIR_RIGHT.dy * FAN);
+      ctx.stroke();
+      ctx.beginPath();
+      ctx.moveTo(aX + off, aY + 10);
+      ctx.lineTo(aX + off + DIR_LEFT.dx * FAN, aY + 10 + DIR_LEFT.dy * FAN);
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  function drawClouds(now) {
+    const parallax = 0.25;
+    for (const c of game.clouds) {
+      c.x -= c.speed;
+      // Parallax: cloud screen X depends on camera offset (use BX for horizontal drift)
+      const sx = c.x - game.cameraBX * parallax;
+      if (sx + c.r * 2.5 < 0) {
+        c.x = game.cameraBX * parallax + W + c.r * 2;
+        c.y = rand(20, H * 0.35);
+      }
+      ctx.save();
+      ctx.globalAlpha = c.alpha;
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath();
+      ctx.arc(sx, c.y, c.r, 0, Math.PI * 2);
+      ctx.arc(sx + c.r * 0.9, c.y - c.r * 0.2, c.r * 0.85, 0, Math.PI * 2);
+      ctx.arc(sx + c.r * 1.7, c.y, c.r * 0.7, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawSparks(now) {
+    const G = 220; // px/s² screen-space gravity on the lift component
+    for (let i = game.sparks.length - 1; i >= 0; i--) {
+      const s = game.sparks[i];
+      const dt = (now - s.born) / 1000;
+      if (dt * 1000 > s.life) { game.sparks.splice(i, 1); continue; }
+      const tNorm = (dt * 1000) / s.life;
+      const bxNow = s.bx + (s.vbx || 0) * dt;
+      const byNow = s.by + (s.vby || 0) * dt;
+      const whNow = s.wh + s.vwy * dt - 0.5 * G * dt * dt;
+      const p = screenOf(bxNow, byNow);
+      ctx.save();
+      ctx.globalAlpha = 1 - tNorm;
+      ctx.fillStyle = s.color;
+      ctx.beginPath();
+      ctx.arc(p.sx, p.sy - whNow, 2.4 * (1 - tNorm * 0.5), 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+    }
+  }
+
+  function drawIdleProgress(now) {
+    if (game.state !== 'idle') return;
+    const cur = game.blocks[0];
+    if (!cur || !cur.theme || cur.bonusGiven || !game.idleStart) return;
+    const t = clamp((now - game.idleStart) / cur.themeIdleTime, 0, 1);
+    const p = screenOf(cur.bx, cur.by);
+    const sx = p.sx;
+    const sy = p.sy - cur.height - 56;
+
+    ctx.save();
+    // backdrop ring
+    ctx.lineWidth = 3;
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.beginPath();
+    ctx.arc(sx, sy, 14, 0, Math.PI * 2);
+    ctx.stroke();
+    // progress ring
+    ctx.strokeStyle = '#f97316';
+    ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.arc(sx, sy, 14, -Math.PI / 2, -Math.PI / 2 + t * Math.PI * 2);
+    ctx.stroke();
+    // bonus value text
+    ctx.fillStyle = '#3a2a18';
+    ctx.font = 'bold 11px -apple-system, "PingFang SC", sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('+' + cur.themeBonus, sx, sy);
+    // theme name above the ring
+    ctx.fillStyle = '#5a3a20';
+    ctx.font = '600 11px -apple-system, "PingFang SC", sans-serif';
+    ctx.fillText(THEMES[cur.theme].name, sx, sy - 22);
+    ctx.restore();
+  }
+
+  function drawShadow() {
+    const p = screenOf(game.player.bx, game.player.by);
+    const sy = p.sy - currentBlockHeight();
+    const lift = Math.max(0, game.player.lift);
+    ctx.save();
+    ctx.fillStyle = `rgba(0,0,0,${0.25 - clamp(lift / 300, 0, 0.18)})`;
+    ctx.beginPath();
+    ctx.ellipse(p.sx, sy + 1, 11 - lift * 0.02, 3, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
+
+  // During a jump, smoothly lerp height between source and target block
+  // so that the player's feet land on the new block at the right altitude.
+  function currentBlockHeight() {
+    if (game.state === 'jumping' && game.blocks[1]) {
+      const t = clamp((performance.now() - game.jumpStart) / JUMP_DURATION, 0, 1);
+      const a = game.blocks[0]?.height ?? 32;
+      const b = game.blocks[1].height;
+      return a + (b - a) * t;
+    }
+    return game.blocks[0] ? game.blocks[0].height : 32;
+  }
+
+  function drawPlayer() {
+    const p = screenOf(game.player.bx, game.player.by);
+    const baseY = p.sy - currentBlockHeight();
+    const sx = p.sx;
+    const sy = baseY - game.player.lift;
+
+    ctx.save();
+    ctx.translate(sx, sy);
+    ctx.rotate(game.player.rotation);
+    ctx.scale(game.player.scaleX, game.player.scaleY);
+
+    if (game.player.lift < 1 && game.state !== 'gameover') {
+      ctx.fillStyle = 'rgba(0,0,0,0.18)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0.5, 9, 1.6, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // -------- Body silhouette: a refined pawn (vase) shape --------
+    // Local coords: feet at y=0, body extends upward into negative y.
+    const bodyGrad = ctx.createLinearGradient(-12, 0, 12, 0);
+    bodyGrad.addColorStop(0, '#646286');
+    bodyGrad.addColorStop(0.45, '#2f2e4d');
+    bodyGrad.addColorStop(1, '#13122a');
+    ctx.fillStyle = bodyGrad;
+
+    ctx.beginPath();
+    // start at left foot
+    ctx.moveTo(-9.5, -0.5);
+    // base flare (left side going up)
+    ctx.bezierCurveTo(-12, -3, -10.5, -7.5, -7, -10);
+    // pinch in toward the waist
+    ctx.bezierCurveTo(-4.8, -13, -4.2, -19, -3.8, -24);
+    // shoulder-neck on left
+    ctx.bezierCurveTo(-4.0, -27.5, -3.0, -28.5, -2.0, -28.8);
+    // top of neck (under head) – flatten
+    ctx.bezierCurveTo(-1.0, -29.0, 1.0, -29.0, 2.0, -28.8);
+    // shoulder-neck on right (mirror)
+    ctx.bezierCurveTo(3.0, -28.5, 4.0, -27.5, 3.8, -24);
+    ctx.bezierCurveTo(4.2, -19, 4.8, -13, 7, -10);
+    // base flare (right side going down)
+    ctx.bezierCurveTo(10.5, -7.5, 12, -3, 9.5, -0.5);
+    // bottom flat-ish belly (slight bow)
+    ctx.bezierCurveTo(7, 1.2, -7, 1.2, -9.5, -0.5);
+    ctx.closePath();
+    ctx.fill();
+
+    // subtle rim light on the left edge
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    ctx.fillStyle = 'rgba(140,140,180,0.22)';
+    ctx.beginPath();
+    ctx.moveTo(-9, -1);
+    ctx.bezierCurveTo(-11, -3, -10, -7, -6.5, -10);
+    ctx.bezierCurveTo(-5.5, -12, -5.3, -16, -5.6, -22);
+    ctx.lineTo(-3.6, -22);
+    ctx.bezierCurveTo(-3.4, -16, -3.6, -12, -4.5, -10);
+    ctx.bezierCurveTo(-7, -7, -8, -3, -7, -1);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+
+    // bottom dark ring (sits on block)
+    ctx.fillStyle = 'rgba(0,0,0,0.35)';
+    ctx.beginPath();
+    ctx.ellipse(0, 0.6, 8.4, 1.4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // -------- Head (small sphere) --------
+    const headY = -34, headR = 6.6;
+    ctx.fillStyle = '#3a3955';
+    ctx.beginPath();
+    ctx.arc(0, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+    // soft sphere shading
+    const headGrad = ctx.createRadialGradient(-1.8, headY - 1.8, 0.5, 0, headY, headR);
+    headGrad.addColorStop(0, 'rgba(255,255,255,0.60)');
+    headGrad.addColorStop(0.35, 'rgba(255,255,255,0.10)');
+    headGrad.addColorStop(1, 'rgba(0,0,0,0.30)');
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    ctx.arc(0, headY, headR, 0, Math.PI * 2);
+    ctx.fill();
+    // crisp specular dot
+    ctx.fillStyle = 'rgba(255,255,255,0.85)';
+    ctx.beginPath();
+    ctx.arc(-2.4, headY - 2.4, 1.1, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+
+  function drawRings(now) {
+    for (let i = game.rings.length - 1; i >= 0; i--) {
+      const r = game.rings[i];
+      const dur = r.big ? 900 : 700;
+      const t = (now - r.t) / dur;
+      if (t >= 1) { game.rings.splice(i, 1); continue; }
+      const alpha = (1 - t) * (r.big ? 0.8 : 0.6);
+      const radius = (r.big ? 22 : 18) + t * (r.big ? 80 : 60);
+      const p = screenOf(r.bx, r.by);
+      ctx.save();
+      ctx.globalAlpha = alpha;
+      ctx.strokeStyle = r.big ? '#fde047' : '#facc15';
+      ctx.lineWidth = r.big ? 2.5 : 2;
+      ctx.beginPath();
+      ctx.ellipse(p.sx, p.sy - r.wh, radius, radius * 0.35, 0, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  function drawFloating(now) {
+    if (!game.bonusToShow) return;
+    const elapsed = now - game.bonusTime;
+    if (elapsed > 1200) { game.bonusToShow = ''; return; }
+    const t = elapsed / 1200;
+    const alpha = 1 - t;
+    const yOff = -t * 70;
+    const p = screenOf(game.bonusBX, game.bonusBY);
+    const pop = t < 0.15 ? 1 + (0.15 - t) * 4 : 1;
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = '#ff5544';
+    ctx.font = `bold ${Math.round(34 * pop)}px -apple-system, "PingFang SC", sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4;
+    ctx.strokeStyle = 'rgba(255,255,255,0.85)';
+    const x = p.sx, y = p.sy - 90 + yOff;
+    ctx.strokeText(game.bonusToShow, x, y);
+    ctx.fillText(game.bonusToShow, x, y);
+    ctx.restore();
+  }
+
+  function draw(now) {
+    ctx.clearRect(0, 0, W, H);
+    drawBackground(now);
+
+    // Decaying screen shake (~280ms): apply to gameplay layer, not the sky/ground
+    let shakeX = 0, shakeY = 0;
+    if (game.shakeAmount > 0) {
+      const SHAKE_DUR = 280;
+      const ageT = clamp((now - game.shakeStart) / SHAKE_DUR, 0, 1);
+      const decay = 1 - ageT;
+      if (decay <= 0) {
+        game.shakeAmount = 0;
+      } else {
+        const amp = game.shakeAmount * decay;
+        const phase = (now - game.shakeStart) * 0.06;
+        shakeX = Math.cos(phase * 1.7) * amp;
+        shakeY = Math.sin(phase * 2.3) * amp * 0.6;
+      }
+    }
+
+    ctx.save();
+    if (shakeX || shakeY) ctx.translate(shakeX, shakeY);
+    // Draw blocks back-to-front (we keep at most 2-3 blocks at a time).
+    // In iso, "back" = higher world coords (further forward) so reverse-iterate.
+    for (let i = game.blocks.length - 1; i >= 0; i--) {
+      game.blocks[i].draw(now);
+    }
+    drawIdleProgress(now);
+    drawShadow();
+    drawPlayer();
+    drawRings(now);
+    drawSparks(now);
+    drawFloating(now);
+    ctx.restore();
+  }
+
+  // -------- Main loop --------
+  function loop(now) {
+    if (game.state === 'charging') {
+      const elapsed = clamp(now - game.chargeStart, 0, MAX_CHARGE);
+      game.charge = elapsed / MAX_CHARGE;
+      $fill.style.width = (game.charge * 100) + '%';
+      audio.updateCharge(game.charge);
+      // squish
+      game.player.scaleY = 1 - 0.42 * game.charge;
+      game.player.scaleX = 1 + 0.30 * game.charge;
+      game.player.lift = 0;
+      game.player.rotation = 0;
+      // cheat auto-release
+      if (game.cheatReleaseAt !== null && now >= game.cheatReleaseAt) {
+        releaseCharge();
+      }
+    }
+
+    if (game.state === 'jumping') {
+      const t = clamp((now - game.jumpStart) / JUMP_DURATION, 0, 1);
+      // 2D linear interpolation along the chosen iso direction
+      game.player.bx = game.jumpFromBX + (game.jumpToBX - game.jumpFromBX) * t;
+      game.player.by = game.jumpFromBY + (game.jumpToBY - game.jumpFromBY) * t;
+      // Parabolic lift on top of the iso travel
+      game.player.lift = Math.sin(t * Math.PI) * JUMP_HEIGHT;
+      // One full tumble in the direction of travel
+      game.player.rotation = game.jumpDir.sign * t * Math.PI * 2;
+      game.player.scaleX = 1;
+      game.player.scaleY = 1;
+      if (t >= 1) {
+        game.player.rotation = 0;
+        game.player.lift = 0;
+        landOrFail();
+      }
+    }
+
+    if (game.state === 'sliding') {
+      const t = clamp((now - game.slideStart) / SLIDE_DURATION, 0, 1);
+      const ease = t * (2 - t); // easeOutQuad
+      game.cameraBX = game.slideFromBX + (game.slideToBX - game.slideFromBX) * ease;
+      game.cameraBY = game.slideFromBY + (game.slideToBY - game.slideFromBY) * ease;
+      if (t >= 1) {
+        $fill.style.width = '0%';
+        game.charge = 0;
+        game.state = 'idle';
+        const cur = game.blocks[0];
+        if (cur && cur.theme && !cur.bonusGiven) {
+          game.idleStart = now;
+        } else {
+          game.idleStart = 0;
+        }
+      }
+    }
+
+    // Idle-on-themed-block bonus timer
+    if (game.state === 'idle') {
+      const cur = game.blocks[0];
+      if (cur && cur.theme && !cur.bonusGiven && game.idleStart) {
+        if (now - game.idleStart >= cur.themeIdleTime) {
+          awardThemeBonus(cur);
+          // If cheat had a queued jump, fire it now
+          if (game.cheatPendingJump) {
+            game.cheatPendingJump = false;
+            // a tiny delay so the bonus chime is audible before the buzz
+            setTimeout(() => {
+              if (game.state === 'idle') startCharge();
+            }, 240);
+          }
+        }
+      }
+    }
+
+    if (game.state === 'gameover') {
+      const t = (now - game.fallStart) / 850;
+      const tilt = (game.failTilt || 0);
+      // Negative lift = falling below the block top
+      game.player.lift = -t * t * 320;
+      game.player.rotation = tilt * t * 1.6;
+      // Drift in the same iso direction we were jumping toward
+      game.player.bx += game.jumpDir.dx * tilt * 0.4;
+      game.player.by += game.jumpDir.dy * tilt * 0.4;
+    }
+
+    draw(now);
+    requestAnimationFrame(loop);
+  }
+
+  // -------- Bind input --------
+  function isControl(target) {
+    // Treat any UI control / topbar element as non-game so taps on the
+    // score-best button or mute button don't accidentally start charging.
+    return target && (
+      target.closest('button') ||
+      target.closest('a') ||
+      target.closest('.topbar') ||
+      target.closest('.gameover')
+    );
+  }
+
+  stage.addEventListener('pointerdown', (e) => {
+    if (isControl(e.target)) return;
+    if (game.state === 'idle') {
+      e.preventDefault();
+      startCharge();
+    }
+  });
+  stage.addEventListener('pointerup', (e) => {
+    if (isControl(e.target)) return;
+    if (game.state === 'charging' && game.cheatReleaseAt === null) {
+      releaseCharge();
+    }
+    // In cheat mode, releasing early is disabled — auto-release fires at exact time.
+    // But if user lifts finger before cheat release fires, we still let cheat finish.
+  });
+  stage.addEventListener('pointercancel', () => {
+    if (game.state === 'charging' && game.cheatReleaseAt === null) {
+      releaseCharge();
+    }
+  });
+  stage.addEventListener('contextmenu', (e) => e.preventDefault());
+  stage.addEventListener('touchmove', (e) => e.preventDefault(), { passive: false });
+
+  // keyboard: space to charge/release
+  let spaceDown = false;
+  window.addEventListener('keydown', (e) => {
+    if (e.code === 'Space' && !spaceDown) {
+      spaceDown = true;
+      if (game.state === 'idle') startCharge();
+    }
+    if (e.code === 'KeyR') reset();
+  });
+  window.addEventListener('keyup', (e) => {
+    if (e.code === 'Space') {
+      spaceDown = false;
+      if (game.state === 'charging' && game.cheatReleaseAt === null) releaseCharge();
+    }
+  });
+
+  // Hidden 外观模式: tap the "最佳" pill 5 times within 2s to toggle.
+  // When on, stage background switches to a cool-sky palette and the
+  // game's auto-perfect (cheat) is enabled — no visible button.
+  const APPEARANCE_TAP_WINDOW_MS = 2000;
+  const APPEARANCE_TAPS_REQUIRED = 5;
+  let appearanceTapCount = 0;
+  let appearanceTapTimer = 0;
+  let hintRestoreTimer = 0;
+  const HINT_DEFAULT = '按住屏幕蓄力，松开起跳';
+
+  function flashHint(text, ms) {
+    if (hintRestoreTimer) clearTimeout(hintRestoreTimer);
+    $hint.textContent = text;
+    $hint.style.opacity = '1';
+    hintRestoreTimer = setTimeout(() => {
+      $hint.textContent = HINT_DEFAULT;
+      hintRestoreTimer = 0;
+    }, ms);
+  }
+
+  function toggleAppearanceMode() {
+    game.cheat = !game.cheat;
+    if (!game.cheat) game.cheatPendingJump = false;
+    stage.classList.toggle('appearance-on', game.cheat);
+    flashHint('外观模式 已' + (game.cheat ? '开启' : '关闭'), 1400);
+  }
+
+  $best.addEventListener('click', (e) => {
+    e.stopPropagation();
+    appearanceTapCount += 1;
+    if (appearanceTapTimer) clearTimeout(appearanceTapTimer);
+    appearanceTapTimer = setTimeout(() => {
+      appearanceTapCount = 0;
+      appearanceTapTimer = 0;
+    }, APPEARANCE_TAP_WINDOW_MS);
+    if (appearanceTapCount >= APPEARANCE_TAPS_REQUIRED) {
+      appearanceTapCount = 0;
+      clearTimeout(appearanceTapTimer);
+      appearanceTapTimer = 0;
+      toggleAppearanceMode();
+    }
+  });
+
+  function syncMuteUI() {
+    const m = audio.isMuted();
+    $muteBtn.textContent = '音效：' + (m ? '关' : '开');
+    $muteBtn.classList.toggle('on', !m);
+  }
+  $muteBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    audio.setMuted(!audio.isMuted());
+    audio.resume();
+    syncMuteUI();
+  });
+  syncMuteUI();
+
+  $restart.addEventListener('click', (e) => {
+    e.stopPropagation();
+    reset();
+  });
+
+  // -------- Boot --------
+  reset();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
