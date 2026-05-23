@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 150" width="260" height="150">
+  <defs>
+    <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2d6a9f"/>
+      <stop offset="55%" stop-color="#1a3a5c"/>
+      <stop offset="100%" stop-color="#0f1419"/>
+    </linearGradient>
+    <linearGradient id="arcG" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#22c55e"/>
+      <stop offset="50%" stop-color="#facc15"/>
+      <stop offset="100%" stop-color="#f43f5e"/>
+    </linearGradient>
+    <linearGradient id="pedalGas" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4ade80"/>
+      <stop offset="100%" stop-color="#15803d"/>
+    </linearGradient>
+    <linearGradient id="pedalBrake" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f87171"/>
+      <stop offset="100%" stop-color="#b91c1c"/>
+    </linearGradient>
+  </defs>
+  <rect width="260" height="150" fill="url(#sky)"/>
+  <ellipse cx="130" cy="155" rx="150" ry="55" fill="#1a1f28"/>
+  <circle cx="130" cy="68" r="50" fill="#141a22" stroke="rgba(255,255,255,0.18)" stroke-width="3"/>
+  <path d="M 86 84 A 44 44 0 1 1 174 84" fill="none" stroke="rgba(255,255,255,0.14)" stroke-width="9" stroke-linecap="round"/>
+  <path d="M 86 84 A 44 44 0 1 1 158 48" fill="none" stroke="url(#arcG)" stroke-width="9" stroke-linecap="round"/>
+  <line x1="130" y1="68" x2="130" y2="32" stroke="#fff" stroke-width="3.5" stroke-linecap="round" transform="rotate(28 130 68)"/>
+  <circle cx="130" cy="68" r="7" fill="#0f1419" stroke="#fff" stroke-width="2"/>
+  <ellipse cx="130" cy="66" rx="26" ry="18" fill="rgba(10,14,20,0.75)"/>
+  <text x="130" y="72" text-anchor="middle" fill="#fff" font-family="Arial,sans-serif" font-size="24" font-weight="bold">68</text>
+  <rect x="24" y="112" width="96" height="32" rx="12" fill="url(#pedalBrake)"/>
+  <rect x="140" y="112" width="96" height="32" rx="12" fill="url(#pedalGas)"/>
+  <circle cx="72" cy="128" r="6" fill="#fff" opacity="0.9"/>
+  <rect x="168" y="122" width="8" height="12" rx="2" fill="#fff" opacity="0.9"/>
+  <rect x="180" y="118" width="8" height="16" rx="2" fill="#fff" opacity="0.9"/>
+  <rect x="192" y="114" width="8" height="20" rx="2" fill="#fff" opacity="0.9"/>
+</svg>
