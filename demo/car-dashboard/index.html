@@ -143,7 +143,7 @@
   .dial .tick { stroke: rgba(255,255,255,0.45); stroke-width: 2; stroke-linecap: round; }
   .dial .tick-major { stroke: rgba(255,255,255,0.9); stroke-width: 3; }
   .dial .tick-label {
-    fill: rgba(255,255,255,0.8); font-size: 11px; font-weight: 700;
+    fill: rgba(255,255,255,0.8); font-size: 10px; font-weight: 700;
     text-anchor: middle; dominant-baseline: middle;
   }
   .dial .needle {
@@ -173,6 +173,10 @@
   .dial-center .num.lvl-1 {
     font-size: clamp(40px, 11vw, 62px);
     letter-spacing: -1px;
+  }
+  .dial-center .num.lvl-2 {
+    font-size: clamp(32px, 9vw, 50px);
+    letter-spacing: 0;
   }
   .dial-center .num.fast { color: #fbbf24; transform: scale(1.05); }
   .dial-center .num.max { color: #f87171; transform: scale(1.1); }
@@ -323,13 +327,13 @@
 
 <script>
 (function () {
-  var MAX_SPEED = 100;
-  var GAS_RATE = 45;
+  var MAX_SPEED = 1500;
+  var GAS_RATE = 150;
   var COAST_RATE = 12;
   var BRAKE_RATE = 80;
   var ARC_LEN = 565.486;
   var DIAL_STEPS = 5;
-  var DIAL_LABELS = [0, 20, 40, 60, 80, 100];
+  var DIAL_LABELS = [0, 300, 600, 900, 1200, 1500];
 
   var $ = function (id) { return document.getElementById(id); };
   var dialBody = $('dialBody');
@@ -402,53 +406,81 @@
   }
   buildLines();
 
+  function createEngineNodes() {
+    if (!audioCtx || engineOsc) return;
+    engineGain = audioCtx.createGain();
+    engineGain.gain.value = 0;
+    engineGain.connect(audioCtx.destination);
+    engineOsc = audioCtx.createOscillator();
+    engineOsc.type = 'sawtooth';
+    engineOsc.frequency.value = 55;
+    engineOsc.connect(engineGain);
+    engineOsc.start();
+  }
+
   function initAudio() {
-    if (audioCtx || !soundOn) return;
+    if (!soundOn) return Promise.resolve(false);
     try {
-      audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-      engineGain = audioCtx.createGain();
-      engineGain.gain.value = 0;
-      engineGain.connect(audioCtx.destination);
-      engineOsc = audioCtx.createOscillator();
-      engineOsc.type = 'sawtooth';
-      engineOsc.frequency.value = 55;
-      engineOsc.connect(engineGain);
-      engineOsc.start();
-      audioReady = true;
-    } catch (e) { /* ignore */ }
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return Promise.resolve(false);
+      if (!audioCtx) {
+        audioCtx = new Ctx();
+      }
+      function ready() {
+        if (!engineOsc) createEngineNodes();
+        audioReady = true;
+        return true;
+      }
+      if (audioCtx.state === 'suspended') {
+        var p = audioCtx.resume();
+        if (p && typeof p.then === 'function') {
+          return p.then(ready).catch(function () { return false; });
+        }
+        return Promise.resolve(ready());
+      }
+      return Promise.resolve(ready());
+    } catch (e) {
+      return Promise.resolve(false);
+    }
   }
 
   function setEngineSound(on, spd) {
-    if (!audioReady || !soundOn) return;
-    var target = on ? 0.06 + (spd / MAX_SPEED) * 0.08 : 0;
-    engineGain.gain.setTargetAtTime(target, audioCtx.currentTime, 0.08);
-    var freq = 50 + (spd / MAX_SPEED) * 120;
-    engineOsc.frequency.setTargetAtTime(freq, audioCtx.currentTime, 0.1);
+    if (!soundOn || !audioReady || !engineGain || !engineOsc) return;
+    engineGain.gain.value = on ? 0.15 + (spd / MAX_SPEED) * 0.1 : 0;
+    engineOsc.frequency.value = 55 + (spd / MAX_SPEED) * 110;
   }
 
   function playBrakeSqueak() {
     if (!soundOn) return;
-    initAudio();
-    if (!audioCtx) return;
-    var osc = audioCtx.createOscillator();
-    var g = audioCtx.createGain();
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(800, audioCtx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.15);
-    g.gain.setValueAtTime(0.12, audioCtx.currentTime);
-    g.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.18);
-    osc.connect(g);
-    g.connect(audioCtx.destination);
-    osc.start();
-    osc.stop(audioCtx.currentTime + 0.2);
+    initAudio().then(function (ok) {
+      if (!ok || !audioCtx) return;
+      var t = audioCtx.currentTime;
+      var osc = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(800, t);
+      osc.frequency.exponentialRampToValueAtTime(200, t + 0.15);
+      g.gain.setValueAtTime(0.12, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.18);
+      osc.connect(g);
+      g.connect(audioCtx.destination);
+      osc.start(t);
+      osc.stop(t + 0.2);
+    });
   }
 
   function bindPedal(btn, key) {
     function down(e) {
       e.preventDefault();
-      initAudio();
-      if (key === 'gas') { gasDown = true; gasBtn.classList.add('pressed'); }
-      else { brakeDown = true; brakeBtn.classList.add('pressed'); playBrakeSqueak(); }
+      if (key === 'gas') {
+        gasDown = true;
+        gasBtn.classList.add('pressed');
+        initAudio().then(function () { setEngineSound(true, speed); });
+      } else {
+        brakeDown = true;
+        brakeBtn.classList.add('pressed');
+        playBrakeSqueak();
+      }
     }
     function up() {
       if (key === 'gas') { gasDown = false; gasBtn.classList.remove('pressed'); }
@@ -473,19 +505,19 @@
     if (b && spd > 5) return '吱——刹住啦！';
     if (g && spd >= MAX_SPEED - 2) return '已经最快啦！🚀';
     if (g && spd < MAX_SPEED - 2) return '踩油门，冲冲冲！';
-    if (spd >= 80) return '飞起来啦！🌟';
-    if (spd >= 50) return '呼呼～好快呀！';
-    if (spd >= 20) return '继续加油～';
+    if (spd >= 1200) return '飞起来啦！🌟';
+    if (spd >= 750) return '呼呼～好快呀！';
+    if (spd >= 300) return '继续加油～';
     if (spd > 3 && !g) return '慢慢停下来…';
     if (spd <= 3) return '按住右边油门，出发！';
     return '出发啦！';
   }
 
   function updateMascot(spd) {
-    if (spd >= 70) {
+    if (spd >= 1050) {
       mascot.textContent = '🏎️';
       mascot.classList.add('wiggle');
-    } else if (spd >= 35) {
+    } else if (spd >= 525) {
       mascot.textContent = '🚙';
       mascot.classList.add('wiggle');
     } else if (spd > 8) {
@@ -524,9 +556,10 @@
     document.documentElement.style.setProperty('--road-speed', roadDur.toFixed(2) + 's');
 
     speedNum.textContent = disp;
-    speedNum.classList.toggle('lvl-1', disp >= 10);
-    speedNum.classList.toggle('fast', disp >= 50);
-    speedNum.classList.toggle('max', disp >= 80);
+    speedNum.classList.toggle('lvl-1', disp >= 100 && disp < 1000);
+    speedNum.classList.toggle('lvl-2', disp >= 1000);
+    speedNum.classList.toggle('fast', disp >= 750);
+    speedNum.classList.toggle('max', disp >= 1200);
 
     needleTargetAng = -135 + 270 * prog;
 
@@ -537,10 +570,10 @@
     }
 
     hint.textContent = getHint(speed, gasDown, brakeDown);
-    hint.classList.toggle('hot', speed >= 50);
+    hint.classList.toggle('hot', speed >= 750);
     updateMascot(speed);
 
-    if (speed >= 80) spawnStars();
+    if (speed >= 1200) spawnStars();
 
     setEngineSound(gasDown && !brakeDown, speed);
 
