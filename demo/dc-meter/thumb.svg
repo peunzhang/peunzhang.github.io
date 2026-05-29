@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 260 150" width="260" height="150">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="0%" r="100%">
+      <stop offset="0%" stop-color="#28304a"/>
+      <stop offset="60%" stop-color="#161a26"/>
+      <stop offset="100%" stop-color="#0c0e15"/>
+    </radialGradient>
+    <radialGradient id="bezel" cx="40%" cy="32%" r="75%">
+      <stop offset="0%" stop-color="#4a4f59"/>
+      <stop offset="45%" stop-color="#23262e"/>
+      <stop offset="100%" stop-color="#0a0b0f"/>
+    </radialGradient>
+    <radialGradient id="face" cx="50%" cy="42%" r="70%">
+      <stop offset="0%" stop-color="#ffffff"/>
+      <stop offset="70%" stop-color="#f3efe2"/>
+      <stop offset="100%" stop-color="#e4ddc8"/>
+    </radialGradient>
+    <linearGradient id="arcG" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#2ecc71"/>
+      <stop offset="55%" stop-color="#f4c20d"/>
+      <stop offset="100%" stop-color="#e53935"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="260" height="150" fill="url(#bg)"/>
+
+  <circle cx="130" cy="78" r="66" fill="url(#bezel)"/>
+  <ellipse cx="108" cy="50" rx="32" ry="18" fill="rgba(255,255,255,0.10)"/>
+  <circle cx="130" cy="78" r="54" fill="url(#face)" stroke="#cabf9e" stroke-width="1.5"/>
+
+  <path d="M 99.6 90.2 A 43 43 0 0 1 160.4 90.2" fill="none" stroke="url(#arcG)" stroke-width="5" stroke-linecap="round"/>
+
+  <text x="92" y="92" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" font-weight="bold" fill="#1a1a1a">0</text>
+  <text x="130" y="55" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" font-weight="bold" fill="#1a1a1a">50</text>
+  <text x="168" y="92" text-anchor="middle" font-family="Arial,sans-serif" font-size="8" font-weight="bold" fill="#1a1a1a">100</text>
+
+  <text x="130" y="86" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" font-weight="bold" fill="#1a1a1a">A</text>
+
+  <line x1="130" y1="128" x2="130" y2="42" stroke="#e53935" stroke-width="3" stroke-linecap="round" transform="rotate(20 130 128)"/>
+  <circle cx="130" cy="128" r="7" fill="#2a2a2a" stroke="#000" stroke-width="1.5"/>
+
+  <circle cx="130" cy="138" r="6" fill="#1c1c1c" stroke="#3a3a3a" stroke-width="1.5"/>
+  <line x1="126" y1="138" x2="134" y2="138" stroke="#6a6a6a" stroke-width="1.5" stroke-linecap="round"/>
+
+  <path d="M38 18 L25 44 L36 44 L29 64 L52 34 L41 34 L49 18 Z" fill="#ffd34d" opacity="0.95"/>
+  <path d="M224 104 L214 122 L222 122 L217 136 L232 116 L224 116 L230 104 Z" fill="#ffd34d" opacity="0.85"/>
+</svg>

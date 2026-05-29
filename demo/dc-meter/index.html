@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#11131a">
+<title>直流电表</title>
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+  :root {
+    --charge: 0;          /* 0~1 当前电流比例 */
+    --safe-top: env(safe-area-inset-top, 0px);
+    --safe-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  html, body {
+    width: 100%; height: 100%; overflow: hidden;
+    background:
+      radial-gradient(circle at 50% 0%, #28304a 0%, #161a26 45%, #0c0e15 100%);
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", "Microsoft YaHei", sans-serif;
+    color: #f0f4f8;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
+  }
+
+  /* 背景跳动的小电火花 */
+  .sparks { position: fixed; inset: 0; pointer-events: none; z-index: 0; overflow: hidden; opacity: calc(0.25 + var(--charge) * 0.6); }
+  .sparks i {
+    position: absolute; width: 3px; height: 3px; border-radius: 50%;
+    background: #ffe27a;
+    box-shadow: 0 0 8px 2px rgba(255,210,80,0.8);
+    animation: floatUp linear infinite;
+  }
+  @keyframes floatUp {
+    0% { transform: translateY(110vh) scale(0.6); opacity: 0; }
+    10% { opacity: 1; }
+    90% { opacity: 1; }
+    100% { transform: translateY(-10vh) scale(1.1); opacity: 0; }
+  }
+
+  .app {
+    position: fixed; inset: 0; z-index: 2;
+    display: flex; flex-direction: column;
+    padding: calc(var(--safe-top) + 10px) 16px calc(var(--safe-bottom) + 14px);
+    overflow: hidden;
+  }
+
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .badge {
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 6px 14px; border-radius: 999px;
+    font-size: 13px; font-weight: 700;
+    backdrop-filter: blur(6px);
+  }
+  .badge b { color: #ffd34d; margin-left: 4px; }
+  .mute-btn {
+    width: 42px; height: 42px; border-radius: 50%;
+    background: rgba(255,255,255,0.08);
+    border: 1px solid rgba(255,255,255,0.15);
+    font-size: 19px; cursor: pointer; color: #fff;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .stage {
+    flex: 1; min-height: 0;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 6px;
+  }
+
+  .mascot {
+    font-size: clamp(34px, 9vw, 48px); line-height: 1;
+    filter: drop-shadow(0 4px 10px rgba(0,0,0,0.5));
+    transition: transform 0.2s ease;
+  }
+  .mascot.buzz { animation: buzz 0.35s ease-in-out infinite; }
+  @keyframes buzz {
+    0%,100% { transform: rotate(-7deg) scale(1); }
+    50% { transform: rotate(7deg) scale(1.12); }
+  }
+
+  .hint {
+    font-size: 15px; font-weight: 700; color: rgba(255,255,255,0.78);
+    min-height: 22px; text-align: center; text-shadow: 0 1px 4px rgba(0,0,0,0.5);
+    transition: color 0.3s;
+  }
+  .hint.hot { color: #ffd34d; }
+
+  /* 电表本体 */
+  .meter-wrap {
+    position: relative;
+    width: min(82vw, 340px);
+    height: min(82vw, 340px);
+    max-height: min(46vh, 340px);
+    flex-shrink: 0;
+  }
+  .meter {
+    display: block; width: 100%; height: 100%;
+    filter: drop-shadow(0 16px 36px rgba(0,0,0,0.6));
+  }
+  .meter .needle {
+    transition: none;
+    filter: drop-shadow(0 0 4px rgba(229,57,53,0.6));
+  }
+  /* 充电时表盘外圈发光 */
+  .meter .glow-ring {
+    fill: none;
+    stroke: #ffd34d;
+    stroke-width: 6;
+    opacity: var(--charge);
+    filter: drop-shadow(0 0 calc(4px + var(--charge) * 16px) rgba(255,211,77,0.9));
+  }
+
+  /* 数字读数 */
+  .readout {
+    display: flex; align-items: baseline; gap: 6px;
+    margin-top: 2px;
+    padding: 8px 22px; border-radius: 16px;
+    background: rgba(8,10,16,0.6);
+    border: 1px solid rgba(255,255,255,0.08);
+    box-shadow: 0 4px 18px rgba(0,0,0,0.35);
+  }
+  .readout .num {
+    font-size: clamp(40px, 12vw, 64px); font-weight: 900;
+    font-variant-numeric: tabular-nums; letter-spacing: -1px;
+    color: #fff; transition: color 0.25s, transform 0.12s ease;
+    text-shadow: 0 0 18px rgba(255,211,77,calc(var(--charge) * 0.9));
+  }
+  .readout .num.fast { color: #ffd34d; transform: scale(1.04); }
+  .readout .num.max { color: #ff6b5e; transform: scale(1.08); }
+  .readout .unit { font-size: 18px; font-weight: 800; color: rgba(255,255,255,0.6); }
+
+  /* 大按钮 */
+  .charge-bar { width: 100%; max-width: 420px; margin: 8px auto 0; flex-shrink: 0; }
+  .charge-btn {
+    width: 100%; min-height: 92px; border: none; border-radius: 24px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px;
+    font-size: 20px; font-weight: 900; color: #3a2400; cursor: pointer;
+    touch-action: none;
+    background: linear-gradient(180deg, #ffe066 0%, #ffc107 55%, #ff9800 100%);
+    box-shadow: 0 9px 0 #c77c00, 0 14px 26px rgba(0,0,0,0.35);
+    transition: transform 0.08s ease, box-shadow 0.12s ease, filter 0.12s;
+  }
+  .charge-btn .icon { font-size: 30px; line-height: 1; }
+  .charge-btn:active, .charge-btn.pressed {
+    transform: translateY(7px);
+    box-shadow: 0 2px 0 #c77c00, 0 5px 14px rgba(0,0,0,0.3);
+    filter: brightness(1.06);
+  }
+
+  /* 飞出的星星 */
+  .stars { position: fixed; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
+  .stars span { position: absolute; font-size: 24px; animation: starFly 1.2s ease-out forwards; opacity: 0; }
+  @keyframes starFly {
+    0% { opacity: 1; transform: translateY(0) scale(0.5) rotate(0deg); }
+    100% { opacity: 0; transform: translateY(-130px) scale(1.2) rotate(180deg); }
+  }
+
+  /* 小电器奖励 */
+  .devices {
+    display: flex; gap: 10px; justify-content: center; align-items: flex-end;
+    margin-top: 2px; flex-wrap: wrap;
+  }
+  .device {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    width: 58px;
+  }
+  .device .face {
+    width: 46px; height: 46px; border-radius: 14px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; line-height: 1;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid rgba(255,255,255,0.12);
+    filter: grayscale(1) brightness(0.55); opacity: 0.55;
+    transition: all 0.25s ease;
+  }
+  .device .label { font-size: 10px; font-weight: 700; color: rgba(255,255,255,0.4); }
+  .device.on .face {
+    filter: none; opacity: 1;
+    background: rgba(255,211,77,0.16);
+    border-color: rgba(255,211,77,0.6);
+    box-shadow: 0 0 16px rgba(255,211,77,0.5);
+  }
+  .device.on .label { color: #ffd34d; }
+  .device.pop .face { animation: devPop 0.5s ease; }
+  @keyframes devPop {
+    0% { transform: scale(0.7); }
+    45% { transform: scale(1.35) rotate(-8deg); }
+    100% { transform: scale(1); }
+  }
+
+  /* 连击提示 */
+  .combo {
+    position: fixed; left: 50%; top: 28%;
+    transform: translateX(-50%) scale(0.6);
+    z-index: 11; pointer-events: none;
+    font-size: 30px; font-weight: 900; color: #ffd34d;
+    text-shadow: 0 2px 10px rgba(0,0,0,0.6), 0 0 18px rgba(255,211,77,0.7);
+    opacity: 0;
+  }
+  .combo.show { animation: comboPop 0.5s ease-out; }
+  @keyframes comboPop {
+    0% { opacity: 0; transform: translateX(-50%) scale(0.5) rotate(-6deg); }
+    35% { opacity: 1; transform: translateX(-50%) scale(1.25) rotate(4deg); }
+    100% { opacity: 0; transform: translateX(-50%) scale(1.4) translateY(-30px); }
+  }
+
+  /* 暴击/双倍弹字 */
+  .crit {
+    position: fixed; left: 50%; top: 40%;
+    transform: translate(-50%, -50%) scale(0.6);
+    z-index: 13; pointer-events: none;
+    font-size: 44px; font-weight: 900;
+    text-shadow: 0 3px 14px rgba(0,0,0,0.6);
+    opacity: 0; white-space: nowrap;
+  }
+  .crit.show { animation: critPop 0.7s cubic-bezier(.18,.9,.3,1.2) forwards; }
+  @keyframes critPop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.3) rotate(-12deg); }
+    30% { opacity: 1; transform: translate(-50%, -50%) scale(1.5) rotate(8deg); }
+    55% { transform: translate(-50%, -50%) scale(1.15) rotate(-3deg); }
+    100% { opacity: 0; transform: translate(-50%, -90%) scale(1.3); }
+  }
+
+  /* 随机事件横幅 */
+  .event-banner {
+    position: fixed; left: 50%; top: calc(var(--safe-top) + 64px);
+    transform: translateX(-50%) translateY(-140%);
+    z-index: 13; pointer-events: none;
+    padding: 10px 22px; border-radius: 999px;
+    font-size: 17px; font-weight: 900; color: #fff; white-space: nowrap;
+    background: rgba(20,24,36,0.9);
+    border: 2px solid rgba(255,211,77,0.7);
+    box-shadow: 0 8px 26px rgba(0,0,0,0.45), 0 0 18px rgba(255,211,77,0.4);
+    opacity: 0;
+  }
+  .event-banner.show { animation: bannerDrop 1.9s ease-in-out forwards; }
+  @keyframes bannerDrop {
+    0% { opacity: 0; transform: translateX(-50%) translateY(-140%) scale(0.8); }
+    12% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1.08); }
+    22% { transform: translateX(-50%) translateY(0) scale(1); }
+    82% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateX(-50%) translateY(-140%) scale(0.9); }
+  }
+
+  /* 过载红闪 */
+  .flash.red { background: radial-gradient(circle at 50% 45%, rgba(255,70,60,0.45), transparent 62%); }
+
+  /* 停电变暗 */
+  .dim {
+    position: fixed; inset: 0; z-index: 9; pointer-events: none;
+    background: #05070c; opacity: 0;
+  }
+  .dim.go { animation: dimOut 0.6s ease-out; }
+  @keyframes dimOut { 0% { opacity: 0.82; } 70% { opacity: 0.55; } 100% { opacity: 0; } }
+
+  /* 烟花彩屑 */
+  .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 12; overflow: hidden; }
+  .confetti i {
+    position: absolute; top: -20px; width: 10px; height: 14px; border-radius: 2px;
+    animation: confFall linear forwards;
+  }
+  @keyframes confFall {
+    0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+    100% { transform: translateY(110vh) rotate(720deg); opacity: 0.9; }
+  }
+
+  /* 闪电 */
+  .bolts { position: fixed; inset: 0; pointer-events: none; z-index: 8; overflow: hidden; }
+  .bolts svg {
+    position: absolute; top: -4%;
+    width: 120px; height: 70vh;
+    overflow: visible;
+    filter: drop-shadow(0 0 6px #fff) drop-shadow(0 0 14px #ffe27a);
+    opacity: 0;
+    animation: boltFlash 0.45s ease-out forwards;
+  }
+  .bolts svg path { stroke: #fff; stroke-width: 3.5; fill: none; stroke-linejoin: round; stroke-linecap: round; }
+  .bolts svg path.core { stroke: #fffbe6; stroke-width: 1.6; }
+  @keyframes boltFlash {
+    0% { opacity: 0; }
+    8% { opacity: 1; }
+    18% { opacity: 0.25; }
+    30% { opacity: 1; }
+    55% { opacity: 0.7; }
+    100% { opacity: 0; }
+  }
+  /* 闪电时整屏轻微泛白 */
+  .skyflash { position: fixed; inset: 0; z-index: 7; pointer-events: none; background: rgba(220,235,255,0.5); opacity: 0; }
+  .skyflash.go { animation: skyFlash 0.4s ease-out; }
+  @keyframes skyFlash { 0% { opacity: 0.55; } 100% { opacity: 0; } }
+
+  /* 满格庆祝时整屏轻微闪光 */
+  .flash {
+    position: fixed; inset: 0; z-index: 9; pointer-events: none;
+    background: radial-gradient(circle at 50% 45%, rgba(255,211,77,0.35), transparent 60%);
+    opacity: 0;
+  }
+  .flash.go { animation: flashOut 0.5s ease-out; }
+  @keyframes flashOut { 0% { opacity: 1; } 100% { opacity: 0; } }
+</style>
+</head>
+<body>
+<div class="sparks" id="sparks" aria-hidden="true"></div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="badge">最高电流 <b id="topCur">0</b> A</div>
+    <button class="mute-btn" id="muteBtn" type="button" aria-label="音效">🔊</button>
+  </div>
+
+  <div class="stage">
+    <div class="mascot" id="mascot">🔋</div>
+    <div class="hint" id="hint">点我，给电表充电！</div>
+
+    <div class="meter-wrap" id="meterWrap">
+      <svg class="meter" viewBox="0 0 300 300" aria-label="直流电表">
+        <defs>
+          <radialGradient id="bezel" cx="38%" cy="32%" r="75%">
+            <stop offset="0%" stop-color="#4a4f59"/>
+            <stop offset="45%" stop-color="#23262e"/>
+            <stop offset="100%" stop-color="#0a0b0f"/>
+          </radialGradient>
+          <radialGradient id="face" cx="50%" cy="42%" r="70%">
+            <stop offset="0%" stop-color="#ffffff"/>
+            <stop offset="70%" stop-color="#f3efe2"/>
+            <stop offset="100%" stop-color="#e4ddc8"/>
+          </radialGradient>
+          <linearGradient id="arcG" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#2ecc71"/>
+            <stop offset="55%" stop-color="#f4c20d"/>
+            <stop offset="100%" stop-color="#e53935"/>
+          </linearGradient>
+        </defs>
+
+        <!-- 外壳 -->
+        <circle cx="150" cy="150" r="146" fill="url(#bezel)"/>
+        <circle cx="150" cy="150" r="146" fill="none" stroke="#000" stroke-width="2" opacity="0.5"/>
+        <!-- 高光 -->
+        <ellipse cx="112" cy="92" rx="70" ry="40" fill="rgba(255,255,255,0.10)"/>
+        <!-- 表盘面 -->
+        <circle cx="150" cy="150" r="120" fill="url(#face)" stroke="#cabf9e" stroke-width="1.5"/>
+        <!-- 充电发光圈 -->
+        <circle class="glow-ring" cx="150" cy="150" r="120"/>
+
+        <g id="dialBody"></g>
+
+        <!-- 中央大 A -->
+        <text x="150" y="150" text-anchor="middle" dominant-baseline="middle"
+              font-family="Arial, sans-serif" font-size="40" font-weight="bold" fill="#1a1a1a">A</text>
+        <line x1="120" y1="166" x2="180" y2="166" stroke="#1a1a1a" stroke-width="2"/>
+        <text x="150" y="184" text-anchor="middle" font-family="Arial, sans-serif" font-size="12" font-weight="bold" fill="#444">阿牛</text>
+
+        <!-- 小字 -->
+        <text x="84" y="206" text-anchor="middle" font-family="Arial, sans-serif" font-size="11" font-weight="bold" fill="#555">BO-52</text>
+        <text x="216" y="206" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" font-weight="bold" fill="#555">DC 50mV</text>
+        <text x="150" y="222" text-anchor="middle" font-family="Arial, sans-serif" font-size="10" fill="#777">2.5</text>
+
+        <!-- 指针 -->
+        <line class="needle" id="needle" x1="150" y1="226" x2="150" y2="74"
+              stroke="#e53935" stroke-width="4" stroke-linecap="round"/>
+        <circle cx="150" cy="226" r="13" fill="#2a2a2a" stroke="#000" stroke-width="2"/>
+        <circle cx="150" cy="226" r="5" fill="#777"/>
+
+        <!-- 底部调零螺丝 -->
+        <circle cx="150" cy="270" r="11" fill="#1c1c1c" stroke="#3a3a3a" stroke-width="2"/>
+        <line x1="142" y1="270" x2="158" y2="270" stroke="#6a6a6a" stroke-width="2.5" stroke-linecap="round"/>
+      </svg>
+    </div>
+
+    <div class="readout">
+      <span class="num" id="curNum">0</span>
+      <span class="unit">A</span>
+    </div>
+
+    <div class="devices" id="devices"></div>
+  </div>
+
+  <div class="charge-bar">
+    <button type="button" class="charge-btn" id="chargeBtn" aria-label="充电">
+      <span class="icon">⚡</span>
+      <span>按住 / 点我充电</span>
+    </button>
+  </div>
+</div>
+
+<div class="bolts" id="bolts" aria-hidden="true"></div>
+<div class="skyflash" id="skyflash" aria-hidden="true"></div>
+<div class="stars" id="stars" aria-hidden="true"></div>
+<div class="confetti" id="confetti" aria-hidden="true"></div>
+<div class="combo" id="combo" aria-hidden="true"></div>
+<div class="flash" id="flash" aria-hidden="true"></div>
+<div class="dim" id="dim" aria-hidden="true"></div>
+<div class="crit" id="crit" aria-hidden="true"></div>
+<div class="event-banner" id="eventBanner" aria-hidden="true"></div>
+
+<script>
+(function () {
+  var MAX_A = 100;         // 满量程
+  var TAP_BOOST = 12;      // 每次点击加多少电流
+  var HOLD_RATE = 68;      // 按住时每秒加多少
+  var DECAY_RATE = 32;     // 松手后每秒衰减多少
+  // 指针：0A 在左上 (-45°)，50A 在右上 (+45°)，竖直向上为 0°
+  var ANG_MIN = -45, ANG_MAX = 45;
+  var DIAL_STEPS = 5;      // 大刻度段数
+
+  var $ = function (id) { return document.getElementById(id); };
+  var dialBody = $('dialBody');
+  var needle = $('needle');
+  var curNum = $('curNum');
+  var hint = $('hint');
+  var mascot = $('mascot');
+  var topCurEl = $('topCur');
+  var chargeBtn = $('chargeBtn');
+  var meterWrap = $('meterWrap');
+  var muteBtn = $('muteBtn');
+  var sparksEl = $('sparks');
+  var starsEl = $('stars');
+  var devicesEl = $('devices');
+  var confettiEl = $('confetti');
+  var comboEl = $('combo');
+  var flashEl = $('flash');
+  var boltsEl = $('bolts');
+  var skyflashEl = $('skyflash');
+  var critEl = $('crit');
+  var dimEl = $('dim');
+  var eventBannerEl = $('eventBanner');
+  var lastBoltAt = 0;
+
+  // 随机性参数
+  var CRIT_CHANCE = 0.10;     // 暴击 x3 概率
+  var DOUBLE_CHANCE = 0.18;   // 双倍 x2 概率(暴击之外)
+  var EVENT_MIN = 4.5;        // 随机事件最短间隔(秒)
+  var EVENT_MAX = 9;          // 随机事件最长间隔(秒)
+  var eventCooldown = randRange(EVENT_MIN, EVENT_MAX);
+
+  function randRange(a, b) { return a + Math.random() * (b - a); }
+
+  // 达到电流就点亮的小电器
+  var DEVICES = [
+    { at: 20, icon: '\uD83D\uDCA1', name: '灯泡' },
+    { at: 44, icon: '\uD83C\uDF00', name: '风扇' },
+    { at: 68, icon: '\uD83D\uDD14', name: '门铃' },
+    { at: 92, icon: '\uD83D\uDE80', name: '火箭' }
+  ];
+  var deviceOn = [];
+
+  // 连击
+  var tapTimes = [];
+  var comboTimer = null;
+
+  var PIVOT_X = 150, PIVOT_Y = 226, R = 120; // 指针轴与表盘半径
+
+  var current = 0;
+  var holdDown = false;
+  var topCur = 0;
+  var needleCurAng = ANG_MIN;
+  var lastTs = 0;
+  var lastStarAt = 0;
+  var celebrated = false;
+
+  // 音频
+  var soundOn = true, audioReady = false, audioCtx = null;
+  var humOsc = null, humGain = null;
+
+  function polar(angleDeg, r) {
+    var rad = (angleDeg - 90) * Math.PI / 180;
+    return { x: PIVOT_X + r * Math.cos(rad), y: PIVOT_Y + r * Math.sin(rad) };
+  }
+  function arcPath(r, startDeg, endDeg) {
+    var s = polar(startDeg, r), e = polar(endDeg, r);
+    var large = (endDeg - startDeg) > 180 ? 1 : 0;
+    return 'M ' + s.x + ' ' + s.y + ' A ' + r + ' ' + r + ' 0 ' + large + ' 1 ' + e.x + ' ' + e.y;
+  }
+
+  function buildDial() {
+    var parts = [];
+    var rArc = 96;
+    // 彩色刻度弧
+    parts.push('<path d="' + arcPath(rArc, ANG_MIN, ANG_MAX) + '" fill="none" stroke="url(#arcG)" stroke-width="7" stroke-linecap="round"/>');
+    // 大刻度 + 数字
+    for (var i = 0; i <= DIAL_STEPS; i++) {
+      var deg = ANG_MIN + (ANG_MAX - ANG_MIN) * i / DIAL_STEPS;
+      var p1 = polar(deg, rArc - 6), p2 = polar(deg, rArc - 22);
+      parts.push('<line x1="' + p1.x.toFixed(1) + '" y1="' + p1.y.toFixed(1) + '" x2="' + p2.x.toFixed(1) + '" y2="' + p2.y.toFixed(1) + '" stroke="#1a1a1a" stroke-width="2.5" stroke-linecap="round"/>');
+      var lp = polar(deg, rArc - 36);
+      parts.push('<text x="' + lp.x.toFixed(1) + '" y="' + lp.y.toFixed(1) + '" text-anchor="middle" dominant-baseline="middle" font-family="Arial, sans-serif" font-size="13" font-weight="bold" fill="#1a1a1a">' + Math.round(i * MAX_A / DIAL_STEPS) + '</text>');
+    }
+    // 小刻度
+    for (var j = 0; j <= DIAL_STEPS * 2; j++) {
+      if (j % 2 === 0) continue;
+      var d2 = ANG_MIN + (ANG_MAX - ANG_MIN) * j / (DIAL_STEPS * 2);
+      var q1 = polar(d2, rArc - 6), q2 = polar(d2, rArc - 15);
+      parts.push('<line x1="' + q1.x.toFixed(1) + '" y1="' + q1.y.toFixed(1) + '" x2="' + q2.x.toFixed(1) + '" y2="' + q2.y.toFixed(1) + '" stroke="#444" stroke-width="1.5" stroke-linecap="round"/>');
+    }
+    dialBody.innerHTML = parts.join('');
+  }
+  buildDial();
+
+  function buildSparks() {
+    var html = '';
+    for (var i = 0; i < 14; i++) {
+      var left = (i * 7 + 3) % 100;
+      var dur = (2.5 + Math.random() * 3).toFixed(2);
+      var delay = (Math.random() * 5).toFixed(2);
+      html += '<i style="left:' + left + '%;animation-duration:' + dur + 's;animation-delay:-' + delay + 's"></i>';
+    }
+    sparksEl.innerHTML = html;
+  }
+  buildSparks();
+
+  function buildDevices() {
+    var html = '';
+    for (var i = 0; i < DEVICES.length; i++) {
+      deviceOn[i] = false;
+      html += '<div class="device" data-i="' + i + '">' +
+                '<div class="face">' + DEVICES[i].icon + '</div>' +
+                '<div class="label">' + DEVICES[i].at + 'A</div>' +
+              '</div>';
+    }
+    devicesEl.innerHTML = html;
+  }
+  buildDevices();
+
+  function updateDevices(a) {
+    var nodes = devicesEl.children;
+    for (var i = 0; i < DEVICES.length; i++) {
+      var on = a >= DEVICES[i].at;
+      if (on && !deviceOn[i]) {
+        deviceOn[i] = true;
+        nodes[i].classList.add('on', 'pop');
+        playDing(i);
+        (function (el) { setTimeout(function () { el.classList.remove('pop'); }, 520); })(nodes[i]);
+      } else if (!on && deviceOn[i]) {
+        deviceOn[i] = false;
+        nodes[i].classList.remove('on', 'pop');
+      }
+    }
+  }
+
+  // ---- 音频 ----
+  function createHum() {
+    if (!audioCtx || humOsc) return;
+    humGain = audioCtx.createGain();
+    humGain.gain.value = 0;
+    humGain.connect(audioCtx.destination);
+    humOsc = audioCtx.createOscillator();
+    humOsc.type = 'triangle';
+    humOsc.frequency.value = 90;
+    humOsc.connect(humGain);
+    humOsc.start();
+  }
+  function initAudio() {
+    if (!soundOn) return Promise.resolve(false);
+    try {
+      var Ctx = window.AudioContext || window.webkitAudioContext;
+      if (!Ctx) return Promise.resolve(false);
+      if (!audioCtx) audioCtx = new Ctx();
+      function ready() { if (!humOsc) createHum(); audioReady = true; return true; }
+      if (audioCtx.state === 'suspended') {
+        var p = audioCtx.resume();
+        if (p && typeof p.then === 'function') return p.then(ready).catch(function () { return false; });
+        return Promise.resolve(ready());
+      }
+      return Promise.resolve(ready());
+    } catch (e) { return Promise.resolve(false); }
+  }
+  function setHum(spd) {
+    if (!soundOn || !audioReady || !humGain || !humOsc) return;
+    var prog = spd / MAX_A;
+    humGain.gain.value = prog > 0.02 ? 0.04 + prog * 0.08 : 0;
+    humOsc.frequency.value = 90 + prog * 220;
+  }
+  function playZap() {
+    if (!soundOn) return;
+    initAudio().then(function (ok) {
+      if (!ok || !audioCtx) return;
+      var t = audioCtx.currentTime;
+      var osc = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      osc.type = 'square';
+      osc.frequency.setValueAtTime(420 + current * 8, t);
+      osc.frequency.exponentialRampToValueAtTime(900 + current * 10, t + 0.08);
+      g.gain.setValueAtTime(0.09, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.12);
+      osc.connect(g); g.connect(audioCtx.destination);
+      osc.start(t); osc.stop(t + 0.13);
+    });
+  }
+  function tone(freq, dur, type, vol, delay) {
+    if (!soundOn) return;
+    initAudio().then(function (ok) {
+      if (!ok || !audioCtx) return;
+      var t = audioCtx.currentTime + (delay || 0);
+      var osc = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      osc.type = type || 'sine';
+      osc.frequency.value = freq;
+      g.gain.setValueAtTime(vol || 0.12, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      osc.connect(g); g.connect(audioCtx.destination);
+      osc.start(t); osc.stop(t + dur + 0.02);
+    });
+  }
+  function playDing(i) {
+    var notes = [659, 784, 988, 1175]; // E5 G5 B5 D6
+    tone(notes[i % notes.length], 0.32, 'sine', 0.14, 0);
+  }
+  function playFanfare() {
+    var seq = [523, 659, 784, 1047]; // C E G C
+    for (var i = 0; i < seq.length; i++) tone(seq[i], 0.3, 'triangle', 0.13, i * 0.1);
+  }
+
+  function showCombo(n) {
+    comboEl.textContent = '连击 x' + n + '!';
+    comboEl.classList.remove('show');
+    void comboEl.offsetWidth; // 重置动画
+    comboEl.classList.add('show');
+    tone(440 + n * 40, 0.12, 'square', 0.08, 0);
+  }
+  function trackCombo() {
+    var now = Date.now();
+    tapTimes.push(now);
+    // 只保留 700ms 内的点击
+    while (tapTimes.length && now - tapTimes[0] > 700) tapTimes.shift();
+    if (tapTimes.length >= 3) showCombo(tapTimes.length);
+  }
+
+  function spawnConfetti() {
+    var colors = ['#ff6b5e', '#ffd34d', '#2ecc71', '#4aa3ff', '#c46bff', '#ff9800'];
+    var html = '';
+    for (var i = 0; i < 40; i++) {
+      var left = Math.random() * 100;
+      var dur = (1.4 + Math.random() * 1.4).toFixed(2);
+      var delay = (Math.random() * 0.3).toFixed(2);
+      var c = colors[i % colors.length];
+      var w = (6 + Math.random() * 8).toFixed(0);
+      html += '<i style="left:' + left.toFixed(1) + '%;width:' + w + 'px;height:' + (Number(w) + 4) +
+              'px;background:' + c + ';animation-duration:' + dur + 's;animation-delay:' + delay + 's"></i>';
+    }
+    confettiEl.innerHTML = html;
+    setTimeout(function () { confettiEl.innerHTML = ''; }, 3200);
+  }
+  function makeBoltPath(w, h) {
+    // 从顶端向下生成一条带分叉的锯齿闪电
+    var x = w / 2, y = 0;
+    var d = 'M ' + x.toFixed(1) + ' 0';
+    var segs = 7;
+    for (var i = 1; i <= segs; i++) {
+      y = h * i / segs;
+      x = w / 2 + (Math.random() - 0.5) * w * 0.8;
+      d += ' L ' + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    return d;
+  }
+  function playThunder(strength) {
+    if (!soundOn) return;
+    initAudio().then(function (ok) {
+      if (!ok || !audioCtx) return;
+      var t = audioCtx.currentTime;
+      // 噼啪：高频快速下滑
+      var o = audioCtx.createOscillator();
+      var g = audioCtx.createGain();
+      o.type = 'sawtooth';
+      o.frequency.setValueAtTime(1200, t);
+      o.frequency.exponentialRampToValueAtTime(180, t + 0.18);
+      g.gain.setValueAtTime(0.10 * strength, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t); o.stop(t + 0.27);
+    });
+  }
+  function spawnLightning(strength) {
+    var now = Date.now();
+    if (now - lastBoltAt < 220) return;
+    lastBoltAt = now;
+    var W = 120, H = Math.round(window.innerHeight * 0.7);
+    var d = makeBoltPath(W, H);
+    var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.style.left = (8 + Math.random() * 80) + '%';
+    svg.innerHTML = '<path d="' + d + '"/><path class="core" d="' + d + '"/>';
+    boltsEl.appendChild(svg);
+    setTimeout(function () { svg.remove(); }, 480);
+
+    skyflashEl.classList.remove('go');
+    void skyflashEl.offsetWidth;
+    skyflashEl.classList.add('go');
+    playThunder(strength || 1);
+    if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+  }
+
+  function celebrate() {
+    flashEl.classList.remove('go', 'red');
+    void flashEl.offsetWidth;
+    flashEl.classList.add('go');
+    spawnConfetti();
+    playFanfare();
+    spawnLightning(1.4);
+    setTimeout(function () { spawnLightning(1.4); }, 260);
+    if (navigator.vibrate) { try { navigator.vibrate([20, 40, 20]); } catch (e) {} }
+  }
+
+  function showCrit(text, color) {
+    critEl.textContent = text;
+    critEl.style.color = color;
+    critEl.style.textShadow = '0 3px 14px rgba(0,0,0,0.6), 0 0 20px ' + color;
+    critEl.classList.remove('show');
+    void critEl.offsetWidth;
+    critEl.classList.add('show');
+  }
+
+  // ---- 交互 ----
+  function tap() {
+    var boost = TAP_BOOST;
+    var r = Math.random();
+    if (r < CRIT_CHANCE) {
+      boost *= 3;
+      showCrit('暴击 x3!', '#ff6b5e');
+      tone(880, 0.18, 'square', 0.12, 0);
+      tone(1320, 0.22, 'square', 0.1, 0.08);
+      spawnLightning(1.3);
+    } else if (r < CRIT_CHANCE + DOUBLE_CHANCE) {
+      boost *= 2;
+      showCrit('双倍 x2!', '#ffd34d');
+      tone(740, 0.16, 'triangle', 0.11, 0);
+    }
+    current = Math.min(MAX_A, current + boost);
+    playZap();
+    trackCombo();
+    if (current >= 48) spawnLightning(0.7 + current / MAX_A);
+  }
+  function down(e) {
+    if (e) e.preventDefault();
+    holdDown = true;
+    chargeBtn.classList.add('pressed');
+    initAudio().then(function () { setHum(current); });
+    tap();
+  }
+  function up() {
+    holdDown = false;
+    chargeBtn.classList.remove('pressed');
+  }
+  ['pointerdown'].forEach(function (ev) {
+    chargeBtn.addEventListener(ev, down);
+    meterWrap.addEventListener(ev, down);
+  });
+  ['pointerup', 'pointerleave', 'pointercancel'].forEach(function (ev) {
+    chargeBtn.addEventListener(ev, up);
+    meterWrap.addEventListener(ev, up);
+  });
+  document.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+
+  muteBtn.addEventListener('click', function () {
+    soundOn = !soundOn;
+    muteBtn.textContent = soundOn ? '🔊' : '🔇';
+    if (!soundOn && humGain) humGain.gain.value = 0;
+  });
+
+  function getHint(a, holding) {
+    if (a >= MAX_A - 1) return '满格啦！⚡⚡⚡';
+    if (a >= 76) return '哇，电流好强！🚀';
+    if (a >= 44) return '继续充，冲冲冲！';
+    if (holding && a < 44) return '按住不放，往上冲～';
+    if (a > 4 && !holding) return '松手啦，指针在往回走…';
+    if (a <= 4) return '点我，给电表充电！';
+    return '加油充电！';
+  }
+  function updateMascot(a) {
+    if (a >= 76) { mascot.textContent = '🚀'; mascot.classList.add('buzz'); }
+    else if (a >= 36) { mascot.textContent = '⚡'; mascot.classList.add('buzz'); }
+    else if (a > 4) { mascot.textContent = '🔋'; mascot.classList.remove('buzz'); }
+    else { mascot.textContent = '🪫'; mascot.classList.remove('buzz'); }
+  }
+  function spawnStars() {
+    var now = Date.now();
+    if (now - lastStarAt < 700) return;
+    lastStarAt = now;
+    var emojis = ['⭐', '✨', '🌟', '💫', '⚡'];
+    for (var i = 0; i < 6; i++) {
+      var s = document.createElement('span');
+      s.textContent = emojis[i % emojis.length];
+      s.style.left = (20 + Math.random() * 60) + '%';
+      s.style.top = (28 + Math.random() * 28) + '%';
+      s.style.animationDelay = (Math.random() * 0.2) + 's';
+      starsEl.appendChild(s);
+      setTimeout(function (el) { el.remove(); }, 1300, s);
+    }
+  }
+
+  function showEvent(text) {
+    eventBannerEl.textContent = text;
+    eventBannerEl.classList.remove('show');
+    void eventBannerEl.offsetWidth;
+    eventBannerEl.classList.add('show');
+  }
+  function flashRed() {
+    flashEl.classList.remove('go');
+    flashEl.classList.add('red');
+    void flashEl.offsetWidth;
+    flashEl.classList.add('go');
+  }
+  function blackout() {
+    dimEl.classList.remove('go');
+    void dimEl.offsetWidth;
+    dimEl.classList.add('go');
+  }
+
+  // 随机小事件表
+  var EVENTS = [
+    {
+      text: '\u26A1 电压暴涨!',
+      apply: function () {
+        current = Math.min(MAX_A, current + 20);
+        spawnLightning(1.3);
+        setTimeout(function () { spawnLightning(1.1); }, 200);
+        tone(660, 0.2, 'sawtooth', 0.12, 0);
+      }
+    },
+    {
+      text: '\uD83D\uDD25 过载警告!',
+      apply: function () {
+        current = Math.max(0, current - 16);
+        flashRed();
+        tone(180, 0.35, 'square', 0.12, 0);
+        if (navigator.vibrate) { try { navigator.vibrate([30, 30, 30]); } catch (e) {} }
+      }
+    },
+    {
+      text: '\uD83C\uDF19 闪一下停电…',
+      apply: function () {
+        current = Math.max(0, current - 12);
+        blackout();
+        tone(120, 0.3, 'sine', 0.1, 0);
+      }
+    },
+    {
+      text: '\uD83C\uDF81 天降彩蛋!',
+      apply: function () {
+        current = Math.min(MAX_A, current + 12);
+        spawnStars();
+        tone(784, 0.16, 'sine', 0.12, 0);
+        tone(1047, 0.2, 'sine', 0.11, 0.1);
+      }
+    }
+  ];
+  function triggerRandomEvent() {
+    var ev = EVENTS[Math.floor(Math.random() * EVENTS.length)];
+    showEvent(ev.text);
+    ev.apply();
+  }
+  function eventStep(dt) {
+    // 玩起来了才会触发，避免静止时打扰
+    if (current <= 10) { eventCooldown = randRange(EVENT_MIN, EVENT_MAX); return; }
+    eventCooldown -= dt;
+    if (eventCooldown <= 0) {
+      triggerRandomEvent();
+      eventCooldown = randRange(EVENT_MIN, EVENT_MAX);
+    }
+  }
+
+  function physicsStep(dt) {
+    if (holdDown) current += HOLD_RATE * dt;
+    else current -= DECAY_RATE * dt;
+    if (current < 0) current = 0;
+    if (current > MAX_A) current = MAX_A;
+  }
+
+  function renderUI() {
+    var prog = current / MAX_A;
+    var disp = Math.round(current);
+    document.documentElement.style.setProperty('--charge', prog.toFixed(3));
+
+    curNum.textContent = disp;
+    curNum.classList.toggle('fast', disp >= 64);
+    curNum.classList.toggle('max', disp >= 92);
+
+    if (disp > topCur) {
+      topCur = disp;
+      topCurEl.textContent = topCur;
+      try { localStorage.setItem('dc-meter-top', String(topCur)); } catch (e) {}
+    }
+
+    hint.textContent = getHint(current, holdDown);
+    hint.classList.toggle('hot', current >= 64);
+    updateMascot(current);
+    updateDevices(current);
+
+    if (current >= MAX_A - 1) {
+      if (!celebrated) { celebrated = true; celebrate(); }
+      spawnStars();
+    } else if (current < MAX_A - 8) {
+      celebrated = false;
+    }
+
+    // 电流高时随机劈闪电，越高越频繁
+    if (current >= 60 && Math.random() < (current / MAX_A) * 0.04) {
+      spawnLightning(0.6 + prog);
+    }
+    setHum(current);
+
+    if (navigator.vibrate && holdDown && current > 5 && current < MAX_A) {
+      // 轻微震动反馈（部分设备支持）
+    }
+  }
+
+  function needleStep() {
+    var target = ANG_MIN + (ANG_MAX - ANG_MIN) * (current / MAX_A);
+    var diff = target - needleCurAng;
+    if (Math.abs(diff) > 0.05) needleCurAng += diff * 0.2;
+    else needleCurAng = target;
+    // 电流越高，指针随机抖动越明显（仅影响显示，不改变真实读数）
+    var jitter = current > 24 ? (Math.random() - 0.5) * (current / MAX_A) * 4 : 0;
+    var shown = needleCurAng + jitter;
+    needle.setAttribute('transform', 'rotate(' + shown.toFixed(2) + ' ' + PIVOT_X + ' ' + PIVOT_Y + ')');
+  }
+
+  function loop(ts) {
+    if (!lastTs) lastTs = ts;
+    var dt = Math.min(0.05, (ts - lastTs) / 1000);
+    lastTs = ts;
+    physicsStep(dt);
+    eventStep(dt);
+    renderUI();
+    needleStep();
+    requestAnimationFrame(loop);
+  }
+
+  try {
+    var saved = localStorage.getItem('dc-meter-top');
+    if (saved) topCur = parseInt(saved, 10) || 0;
+    topCurEl.textContent = topCur;
+  } catch (e) {}
+
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
