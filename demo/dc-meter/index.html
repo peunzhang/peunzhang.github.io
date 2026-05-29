@@ -227,6 +227,31 @@
     100% { opacity: 0; transform: translate(-50%, -90%) scale(1.3); }
   }
 
+  /* 破纪录弹字 */
+  .record {
+    position: fixed; left: 50%; top: 34%;
+    transform: translate(-50%, -50%) scale(0.5);
+    z-index: 14; pointer-events: none; text-align: center;
+    font-size: 40px; font-weight: 900; color: #fff; white-space: nowrap;
+    text-shadow: 0 0 10px #ffd34d, 0 0 22px #ff9800, 0 3px 14px rgba(0,0,0,0.6);
+    opacity: 0;
+  }
+  .record.show { animation: recordPop 1.4s ease-out forwards; }
+  @keyframes recordPop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.4) rotate(-10deg); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.4) rotate(6deg); }
+    40% { transform: translate(-50%, -50%) scale(1.1) rotate(-2deg); }
+    78% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+    100% { opacity: 0; transform: translate(-50%, -78%) scale(1.2); }
+  }
+  /* 徽章高亮脉冲 */
+  .badge.bump { animation: badgeBump 0.5s ease; }
+  @keyframes badgeBump {
+    0% { transform: scale(1); }
+    40% { transform: scale(1.18); background: rgba(255,211,77,0.3); }
+    100% { transform: scale(1); }
+  }
+
   /* 随机事件横幅 */
   .event-banner {
     position: fixed; left: 50%; top: calc(var(--safe-top) + 64px);
@@ -258,6 +283,47 @@
   }
   .dim.go { animation: dimOut 0.6s ease-out; }
   @keyframes dimOut { 0% { opacity: 0.82; } 70% { opacity: 0.55; } 100% { opacity: 0; } }
+
+  /* 发烫：背景随电流由冷转热 */
+  .heat {
+    position: fixed; inset: 0; z-index: 1; pointer-events: none;
+    background: radial-gradient(circle at 50% 38%, rgba(255,90,40,0.9), rgba(180,30,10,0.5) 45%, transparent 72%);
+    opacity: calc(var(--charge) * var(--charge) * 0.7);
+    transition: opacity 0.2s linear;
+  }
+  /* 表盘面发烫泛红 */
+  .meter .heat-face {
+    fill: #ff3b1e;
+    opacity: calc(var(--charge) * var(--charge) * 0.5);
+  }
+  /* 冒烟 */
+  .smoke { position: fixed; inset: 0; pointer-events: none; z-index: 10; overflow: hidden; }
+  .smoke span {
+    position: absolute; font-size: 26px;
+    animation: smokeRise 1.6s ease-out forwards; opacity: 0;
+  }
+  @keyframes smokeRise {
+    0% { opacity: 0; transform: translateY(0) scale(0.6); }
+    25% { opacity: 0.85; }
+    100% { opacity: 0; transform: translateY(-150px) scale(1.6); }
+  }
+
+  /* 超载冲刺模式 */
+  .overdrive-vignette {
+    position: fixed; inset: 0; z-index: 6; pointer-events: none; opacity: 0;
+    box-shadow: inset 0 0 120px 40px rgba(255,40,20,0.85);
+  }
+  body.overdrive .overdrive-vignette { animation: odPulse 0.5s ease-in-out infinite; }
+  @keyframes odPulse { 0%,100% { opacity: 0.3; } 50% { opacity: 0.95; } }
+  body.overdrive .app { animation: odShake 0.18s linear infinite; }
+  @keyframes odShake {
+    0% { transform: translate(0, 0); }
+    25% { transform: translate(-2px, 1px); }
+    50% { transform: translate(2px, -1px); }
+    75% { transform: translate(-1px, -2px); }
+    100% { transform: translate(1px, 2px); }
+  }
+  body.overdrive .readout .num { color: #ff4530 !important; }
 
   /* 烟花彩屑 */
   .confetti { position: fixed; inset: 0; pointer-events: none; z-index: 12; overflow: hidden; }
@@ -307,10 +373,11 @@
 </head>
 <body>
 <div class="sparks" id="sparks" aria-hidden="true"></div>
+<div class="heat" id="heat" aria-hidden="true"></div>
 
 <div class="app">
   <div class="topbar">
-    <div class="badge">最高电流 <b id="topCur">0</b> A</div>
+    <div class="badge" id="badge">最高电流 <b id="topCur">0</b> A</div>
     <button class="mute-btn" id="muteBtn" type="button" aria-label="音效">🔊</button>
   </div>
 
@@ -345,6 +412,8 @@
         <ellipse cx="112" cy="92" rx="70" ry="40" fill="rgba(255,255,255,0.10)"/>
         <!-- 表盘面 -->
         <circle cx="150" cy="150" r="120" fill="url(#face)" stroke="#cabf9e" stroke-width="1.5"/>
+        <!-- 发烫泛红 -->
+        <circle class="heat-face" cx="150" cy="150" r="120"/>
         <!-- 充电发光圈 -->
         <circle class="glow-ring" cx="150" cy="150" r="120"/>
 
@@ -392,19 +461,22 @@
 <div class="bolts" id="bolts" aria-hidden="true"></div>
 <div class="skyflash" id="skyflash" aria-hidden="true"></div>
 <div class="stars" id="stars" aria-hidden="true"></div>
+<div class="smoke" id="smoke" aria-hidden="true"></div>
 <div class="confetti" id="confetti" aria-hidden="true"></div>
 <div class="combo" id="combo" aria-hidden="true"></div>
 <div class="flash" id="flash" aria-hidden="true"></div>
 <div class="dim" id="dim" aria-hidden="true"></div>
+<div class="overdrive-vignette" aria-hidden="true"></div>
 <div class="crit" id="crit" aria-hidden="true"></div>
+<div class="record" id="record" aria-hidden="true"></div>
 <div class="event-banner" id="eventBanner" aria-hidden="true"></div>
 
 <script>
 (function () {
-  var MAX_A = 100;         // 满量程
-  var TAP_BOOST = 12;      // 每次点击加多少电流
-  var HOLD_RATE = 68;      // 按住时每秒加多少
-  var DECAY_RATE = 32;     // 松手后每秒衰减多少
+  var MAX_A = 1000;        // 满量程
+  var TAP_BOOST = 60;      // 每次点击加多少电流
+  var HOLD_RATE = 360;     // 按住时每秒加多少
+  var DECAY_RATE = 280;    // 松手后每秒衰减多少
   // 指针：0A 在左上 (-45°)，50A 在右上 (+45°)，竖直向上为 0°
   var ANG_MIN = -45, ANG_MAX = 45;
   var DIAL_STEPS = 5;      // 大刻度段数
@@ -430,7 +502,13 @@
   var critEl = $('crit');
   var dimEl = $('dim');
   var eventBannerEl = $('eventBanner');
+  var recordEl = $('record');
+  var badgeEl = $('badge');
+  var smokeEl = $('smoke');
   var lastBoltAt = 0;
+  var lastSmokeAt = 0;
+  var bestAtStart = 0;     // 本次进入时的历史最高
+  var recordBeaten = false;
 
   // 随机性参数
   var CRIT_CHANCE = 0.10;     // 暴击 x3 概率
@@ -443,10 +521,12 @@
 
   // 达到电流就点亮的小电器
   var DEVICES = [
-    { at: 20, icon: '\uD83D\uDCA1', name: '灯泡' },
-    { at: 44, icon: '\uD83C\uDF00', name: '风扇' },
-    { at: 68, icon: '\uD83D\uDD14', name: '门铃' },
-    { at: 92, icon: '\uD83D\uDE80', name: '火箭' }
+    { at: 100, icon: '\uD83D\uDCA1', name: '灯泡' },
+    { at: 250, icon: '\uD83D\uDCFA', name: '电视' },
+    { at: 450, icon: '\u2744\uFE0F', name: '空调' },
+    { at: 650, icon: '\uD83C\uDFE0', name: '楼房' },
+    { at: 820, icon: '\uD83C\uDFA1', name: '摩天轮' },
+    { at: 950, icon: '\uD83D\uDE80', name: '火箭' }
   ];
   var deviceOn = [];
 
@@ -463,6 +543,7 @@
   var lastTs = 0;
   var lastStarAt = 0;
   var celebrated = false;
+  var overdrive = false;
 
   // 音频
   var soundOn = true, audioReady = false, audioCtx = null;
@@ -714,6 +795,17 @@
     void critEl.offsetWidth;
     critEl.classList.add('show');
   }
+  function showRecord() {
+    recordEl.innerHTML = '\uD83C\uDFC6 NEW 记录!';
+    recordEl.classList.remove('show');
+    void recordEl.offsetWidth;
+    recordEl.classList.add('show');
+    tone(784, 0.18, 'triangle', 0.12, 0);
+    tone(988, 0.18, 'triangle', 0.12, 0.1);
+    tone(1319, 0.26, 'triangle', 0.12, 0.2);
+    spawnConfetti();
+    if (navigator.vibrate) { try { navigator.vibrate([15, 30, 15]); } catch (e) {} }
+  }
 
   // ---- 交互 ----
   function tap() {
@@ -733,7 +825,7 @@
     current = Math.min(MAX_A, current + boost);
     playZap();
     trackCombo();
-    if (current >= 48) spawnLightning(0.7 + current / MAX_A);
+    if (current >= 480) spawnLightning(0.7 + current / MAX_A);
   }
   function down(e) {
     if (e) e.preventDefault();
@@ -764,17 +856,17 @@
 
   function getHint(a, holding) {
     if (a >= MAX_A - 1) return '满格啦！⚡⚡⚡';
-    if (a >= 76) return '哇，电流好强！🚀';
-    if (a >= 44) return '继续充，冲冲冲！';
-    if (holding && a < 44) return '按住不放，往上冲～';
-    if (a > 4 && !holding) return '松手啦，指针在往回走…';
-    if (a <= 4) return '点我，给电表充电！';
+    if (a >= 760) return '哇，电流好强！🚀';
+    if (a >= 440) return '继续充，冲冲冲！';
+    if (holding && a < 440) return '按住不放，往上冲～';
+    if (a > 40 && !holding) return '松手啦，指针在往回走…';
+    if (a <= 40) return '点我，给电表充电！';
     return '加油充电！';
   }
   function updateMascot(a) {
-    if (a >= 76) { mascot.textContent = '🚀'; mascot.classList.add('buzz'); }
-    else if (a >= 36) { mascot.textContent = '⚡'; mascot.classList.add('buzz'); }
-    else if (a > 4) { mascot.textContent = '🔋'; mascot.classList.remove('buzz'); }
+    if (a >= 760) { mascot.textContent = '🚀'; mascot.classList.add('buzz'); }
+    else if (a >= 360) { mascot.textContent = '⚡'; mascot.classList.add('buzz'); }
+    else if (a > 40) { mascot.textContent = '🔋'; mascot.classList.remove('buzz'); }
     else { mascot.textContent = '🪫'; mascot.classList.remove('buzz'); }
   }
   function spawnStars() {
@@ -816,7 +908,7 @@
     {
       text: '\u26A1 电压暴涨!',
       apply: function () {
-        current = Math.min(MAX_A, current + 20);
+        current = Math.min(MAX_A, current + 200);
         spawnLightning(1.3);
         setTimeout(function () { spawnLightning(1.1); }, 200);
         tone(660, 0.2, 'sawtooth', 0.12, 0);
@@ -825,7 +917,7 @@
     {
       text: '\uD83D\uDD25 过载警告!',
       apply: function () {
-        current = Math.max(0, current - 16);
+        current = Math.max(0, current - 160);
         flashRed();
         tone(180, 0.35, 'square', 0.12, 0);
         if (navigator.vibrate) { try { navigator.vibrate([30, 30, 30]); } catch (e) {} }
@@ -834,7 +926,7 @@
     {
       text: '\uD83C\uDF19 闪一下停电…',
       apply: function () {
-        current = Math.max(0, current - 12);
+        current = Math.max(0, current - 120);
         blackout();
         tone(120, 0.3, 'sine', 0.1, 0);
       }
@@ -842,7 +934,7 @@
     {
       text: '\uD83C\uDF81 天降彩蛋!',
       apply: function () {
-        current = Math.min(MAX_A, current + 12);
+        current = Math.min(MAX_A, current + 120);
         spawnStars();
         tone(784, 0.16, 'sine', 0.12, 0);
         tone(1047, 0.2, 'sine', 0.11, 0.1);
@@ -856,11 +948,27 @@
   }
   function eventStep(dt) {
     // 玩起来了才会触发，避免静止时打扰
-    if (current <= 10) { eventCooldown = randRange(EVENT_MIN, EVENT_MAX); return; }
+    if (current <= 100) { eventCooldown = randRange(EVENT_MIN, EVENT_MAX); return; }
     eventCooldown -= dt;
     if (eventCooldown <= 0) {
       triggerRandomEvent();
       eventCooldown = randRange(EVENT_MIN, EVENT_MAX);
+    }
+  }
+
+  function spawnSmoke() {
+    var now = Date.now();
+    if (now - lastSmokeAt < 260) return;
+    lastSmokeAt = now;
+    var puffs = ['\uD83D\uDCA8', '\uD83D\uDCA8', '\u2601\uFE0F'];
+    for (var i = 0; i < 2; i++) {
+      var s = document.createElement('span');
+      s.textContent = puffs[Math.floor(Math.random() * puffs.length)];
+      s.style.left = (38 + Math.random() * 24) + '%';
+      s.style.top = (34 + Math.random() * 14) + '%';
+      s.style.fontSize = (22 + Math.random() * 14).toFixed(0) + 'px';
+      smokeEl.appendChild(s);
+      setTimeout(function (el) { el.remove(); }, 1700, s);
     }
   }
 
@@ -877,30 +985,50 @@
     document.documentElement.style.setProperty('--charge', prog.toFixed(3));
 
     curNum.textContent = disp;
-    curNum.classList.toggle('fast', disp >= 64);
-    curNum.classList.toggle('max', disp >= 92);
+    curNum.classList.toggle('fast', disp >= 640);
+    curNum.classList.toggle('max', disp >= 920);
 
     if (disp > topCur) {
       topCur = disp;
       topCurEl.textContent = topCur;
+      badgeEl.classList.remove('bump');
+      void badgeEl.offsetWidth;
+      badgeEl.classList.add('bump');
       try { localStorage.setItem('dc-meter-top', String(topCur)); } catch (e) {}
     }
 
-    hint.textContent = getHint(current, holdDown);
-    hint.classList.toggle('hot', current >= 64);
+    // 破纪录：超过本次进入时的历史最高，庆祝一次
+    if (!recordBeaten && bestAtStart > 0 && disp > bestAtStart) {
+      recordBeaten = true;
+      showRecord();
+    }
+
+    hint.textContent = overdrive ? '超载冲刺!!! 🔥🔥🔥' : getHint(current, holdDown);
+    hint.classList.toggle('hot', current >= 640);
     updateMascot(current);
     updateDevices(current);
 
-    if (current >= MAX_A - 1) {
+    if (current >= MAX_A - 10) {
       if (!celebrated) { celebrated = true; celebrate(); }
       spawnStars();
-    } else if (current < MAX_A - 8) {
+      if (!overdrive) {
+        overdrive = true;
+        document.body.classList.add('overdrive');
+        spawnLightning(1.5);
+        setTimeout(function () { spawnLightning(1.5); }, 180);
+      }
+    } else if (current < MAX_A - 80) {
       celebrated = false;
+      if (overdrive) { overdrive = false; document.body.classList.remove('overdrive'); }
     }
 
     // 电流高时随机劈闪电，越高越频繁
-    if (current >= 60 && Math.random() < (current / MAX_A) * 0.04) {
+    if (current >= 600 && Math.random() < (current / MAX_A) * 0.04) {
       spawnLightning(0.6 + prog);
+    }
+    // 高区冒烟（发烫）
+    if (prog > 0.8 && Math.random() < (prog - 0.8) * 1.5) {
+      spawnSmoke();
     }
     setHum(current);
 
@@ -915,7 +1043,7 @@
     if (Math.abs(diff) > 0.05) needleCurAng += diff * 0.2;
     else needleCurAng = target;
     // 电流越高，指针随机抖动越明显（仅影响显示，不改变真实读数）
-    var jitter = current > 24 ? (Math.random() - 0.5) * (current / MAX_A) * 4 : 0;
+    var jitter = current > 240 ? (Math.random() - 0.5) * (current / MAX_A) * 4 : 0;
     var shown = needleCurAng + jitter;
     needle.setAttribute('transform', 'rotate(' + shown.toFixed(2) + ' ' + PIVOT_X + ' ' + PIVOT_Y + ')');
   }
@@ -934,6 +1062,7 @@
   try {
     var saved = localStorage.getItem('dc-meter-top');
     if (saved) topCur = parseInt(saved, 10) || 0;
+    bestAtStart = topCur;
     topCurEl.textContent = topCur;
   } catch (e) {}
 
